@@ -1,0 +1,169 @@
+/* Layout */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.app {
+  min-height: 100vh;
+  background: var(--color-background);
+  padding: 20px 16px 40px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* Header */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+.header-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.app-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--gray-12);
+}
+.app-subtitle {
+  font-size: 0.8rem;
+  color: var(--gray-10);
+}
+
+/* Main Nav */
+.main-nav {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  background: var(--gray-3);
+  border-radius: var(--radius-2);
+  padding: 3px;
+  max-width: 240px;
+  margin: 0 auto;
+}
+.nav-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--gray-10);
+  border-radius: calc(var(--radius-2) - 2px);
+  padding: 6px 20px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition: color 0.15s, background 0.15s;
+}
+.nav-btn:hover {
+  color: var(--gray-12);
+}
+.nav-btn:focus-visible {
+  outline: 2px solid var(--indigo-8);
+  outline-offset: 1px;
+}
+.nav-btn--active {
+  background: var(--color-panel-solid);
+  color: var(--indigo-11);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+
+.header-left {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.fullscreen-btn {
+  background: none;
+  border: 1px solid var(--gray-6);
+  color: var(--gray-10);
+  border-radius: var(--radius-2);
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+.fullscreen-btn:hover {
+  border-color: var(--indigo-8);
+  color: var(--indigo-11);
+}
+.period-switcher {
+  display: flex;
+  gap: 4px;
+  background: var(--gray-3);
+  border-radius: var(--radius-2);
+  padding: 3px;
+}
+.period-btn {
+  background: none;
+  border: none;
+  color: var(--gray-10);
+  border-radius: calc(var(--radius-2) - 2px);
+  padding: 4px 12px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+.period-btn:hover {
+  color: var(--gray-12);
+}
+.period-btn--active {
+  background: var(--color-panel-solid);
+  color: var(--indigo-11);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* KPI Bar */
+.kpi-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.kpi-card {
+  padding: 18px 16px 14px !important;
+}
+
+/* Chart */
+.chart-section {
+  margin-bottom: 28px;
+}
+.chart-container {
+  direction: ltr;
+  margin-top: 16px;
+}
+
+/* Ops Section */
+.ops-section {
+  padding: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--gray-6);
+  border-radius: var(--radius-3);
+}
+.table-wrapper {
+  overflow-x: auto;
+}
+
+/* WhatsApp */
+.whatsapp-btn {
+  font-size: 1.1rem;
+  text-decoration: none;
+  line-height: 1;
+  opacity: 0.75;
+}
+.whatsapp-btn:hover {
+  opacity: 1;
+}
+
+/* Error */
+.error-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--red-11);
+  font-size: 1rem;
+  padding: 20px;
+  text-align: center;
+}
