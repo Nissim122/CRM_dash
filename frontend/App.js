@@ -6,6 +6,7 @@ import '@radix-ui/themes/styles.css';
 import KpiBar from './components/KpiBar';
 import TrendChart from './components/TrendChart';
 import LeadFunnel from './components/LeadFunnel';
+import LeadSourceChart from './components/LeadSourceChart';
 import OperationalTable from './components/OperationalTable';
 import CustomersView from './components/CustomersView';
 import './styles.css';
@@ -59,6 +60,7 @@ export default function App() {
       firstResponseAt:  f('זמן תגובה ראשון'),
       responseWait:     f('זמן המתנה לליד'),
       nextAction:       f('פעולה הבאה') ?? f('הערות לליד'),
+      proposalDate:     f('הצעה נשלחה בתאריך'),
     };
   }, [leadsTable]);
 
@@ -143,7 +145,7 @@ export default function App() {
             <div className="analytics-row">
               <TrendChart records={records} fields={fields} period={period} />
               <LeadFunnel records={records} fields={fields} period={period} />
-              <div className="analytics-empty" />
+              <LeadSourceChart records={records} fields={fields} period={period} />
             </div>
             <OperationalTable records={records} fields={fields} table={leadsTable} interactionsTable={interactionsTable} interactionsRecords={interactionsRecords} />
           </>
