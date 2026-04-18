@@ -41,11 +41,14 @@ export default function KpiBar({ records, fields, period = 'month' }) {
   const responseTimes = gConfig.get(RESPONSE_TIMES_KEY) ?? {};
 
   const avgResponseMs = useMemo(() => {
-    const entries = Object.values(responseTimes);
+    const startDate = getPeriodStart(period);
+    const entries = Object.values(responseTimes).filter(
+      (e) => e.createdAt >= startDate.getTime()
+    );
     if (!entries.length) return null;
     const total = entries.reduce((sum, e) => sum + (e.changedAt - e.createdAt), 0);
     return total / entries.length;
-  }, [responseTimes]);
+  }, [responseTimes, period]);
 
   const stats = useMemo(() => {
     const startDate = getPeriodStart(period);

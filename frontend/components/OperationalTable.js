@@ -105,6 +105,9 @@ export default function OperationalTable({ records, fields, table }) {
   const presets       = gConfig.get(PRESETS_KEY) ?? [];
   const responseTimes = gConfig.get(RESPONSE_TIMES_KEY) ?? {};
 
+  const responseTimesRef = useRef(responseTimes);
+  useEffect(() => { responseTimesRef.current = responseTimes; }, [responseTimes]);
+
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 60_000);
     return () => clearInterval(id);
@@ -254,11 +257,10 @@ export default function OperationalTable({ records, fields, table }) {
       updates[fields.status.id] = draft.status ? { name: draft.status } : null;
       if (orig.status === 'לא נוצר קשר' && draft.status && draft.status !== 'לא נוצר קשר') {
         const createdRaw = fields.createdTime ? record.getCellValue(fields.createdTime) : record.createdTime;
-        const existing = globalConfig.get(RESPONSE_TIMES_KEY) ?? {};
-        await globalConfig.setAsync(RESPONSE_TIMES_KEY, {
-          ...existing,
-          [record.id]: { createdAt: new Date(createdRaw).getTime(), changedAt: Date.now() },
-        });
+        const existing = { ...responseTimesRef.current };
+        existing[record.id] = { createdAt: new Date(createdRaw).getTime(), changedAt: Date.now() };
+        responseTimesRef.current = existing;
+        await globalConfig.setAsync(RESPONSE_TIMES_KEY, existing);
       }
     }
     if (fields.nextAction && draft.nextAction !== orig.nextAction) {
