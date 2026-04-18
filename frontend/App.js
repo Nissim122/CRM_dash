@@ -5,6 +5,7 @@ import { Theme } from '@radix-ui/themes';
 import '@radix-ui/themes/styles.css';
 import KpiBar from './components/KpiBar';
 import TrendChart from './components/TrendChart';
+import LeadFunnel from './components/LeadFunnel';
 import OperationalTable from './components/OperationalTable';
 import CustomersView from './components/CustomersView';
 import './styles.css';
@@ -38,20 +39,26 @@ export default function App() {
   const meetingsRecords  = useRecords(meetingsTable);
   const customersRecords = useRecords(customersTable);
 
+  const interactionsTable   = base.getTableByNameIfExists('אינטרקציות');
+  const interactionsRecords = useRecords(interactionsTable);
+
   const fields = useMemo(() => {
     if (!leadsTable) return {};
     const f = (name) => leadsTable.getFieldByNameIfExists(name);
     return {
-      name:        f('שם מלא'),
-      status:      f('סטטוס'),
-      createdTime: f('תאריך יצירת רשומה'),
-      phone:       f('טלפון'),
-      score:       f('ניקוד לפי אינטרקציות'),
-      serviceType: f('סוג שירות'),
-      leadSource:  f('מקור ליד'),
-      dealValue:   f('שווי עסקה משוער'),
-      // פעולה הבאה — uses dedicated field if exists, otherwise falls back to הערות לליד
-      nextAction:  f('פעולה הבאה') ?? f('הערות לליד'),
+      name:             f('שם מלא'),
+      status:           f('סטטוס'),
+      createdTime:      f('תאריך יצירת רשומה'),
+      phone:            f('טלפון'),
+      score:            f('ניקוד לפי אינטרקציות'),
+      interactions:     f('אינטרקציות'),
+      messageSent:      f('נשלחה הודעה לליד ?'),
+      serviceType:      f('סוג שירות'),
+      leadSource:       f('מקור ליד'),
+      dealValue:        f('שווי עסקה משוער'),
+      firstResponseAt:  f('זמן תגובה ראשון'),
+      responseWait:     f('זמן המתנה לליד'),
+      nextAction:       f('פעולה הבאה') ?? f('הערות לליד'),
     };
   }, [leadsTable]);
 
@@ -133,8 +140,12 @@ export default function App() {
         {activeView === 'leads' && (
           <>
             <KpiBar records={records} fields={fields} period={period} />
-            <TrendChart records={records} fields={fields} period={period} />
-            <OperationalTable records={records} fields={fields} table={leadsTable} />
+            <div className="analytics-row">
+              <TrendChart records={records} fields={fields} period={period} />
+              <LeadFunnel records={records} fields={fields} period={period} />
+              <div className="analytics-empty" />
+            </div>
+            <OperationalTable records={records} fields={fields} table={leadsTable} interactionsTable={interactionsTable} interactionsRecords={interactionsRecords} />
           </>
         )}
 

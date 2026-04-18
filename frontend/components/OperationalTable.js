@@ -6,13 +6,12 @@ import { globalConfig } from '@airtable/blocks';
 import { useGlobalConfig } from '@airtable/blocks/ui';
 
 const PRESETS_KEY = 'filterPresets_leads';
-const RESPONSE_TIMES_KEY = 'leadResponseTimestamps';
 
-function formatElapsed(ms) {
-  if (ms < 3_600_000) return `${Math.floor(ms / 60_000)} דקות`;
-  if (ms < 86_400_000) return `${Math.floor(ms / 3_600_000)} שעות`;
-  const d = Math.floor(ms / 86_400_000);
-  const h = Math.floor((ms % 86_400_000) / 3_600_000);
+function formatMinutes(min) {
+  if (min < 60) return `${Math.round(min)} דקות`;
+  if (min < 1440) return `${Math.round(min / 60)} שעות`;
+  const d = Math.floor(min / 1440);
+  const h = Math.floor((min % 1440) / 60);
   return h > 0 ? `${d} ימים ${h} שעות` : `${d} ימים`;
 }
 
@@ -38,13 +37,15 @@ const DATE_RANGES = [
 ];
 
 const EMPTY_FILTERS = {
-  search:    '',
-  statuses:  [],
-  sources:   [],
-  services:  [],
-  minScore:  '',
-  dateRange: 'all',
-  newOnly:   false,
+  search:          '',
+  statuses:        [],
+  sources:         [],
+  services:        [],
+  minScore:        '',
+  minInteractions: '',
+  messageSent:     'all',
+  dateRange:       'all',
+  newOnly:         false,
 };
 
 function getDateRangeStart(key) {
@@ -77,7 +78,7 @@ function toggleInArray(arr, val) {
   return arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
 }
 
-export default function OperationalTable({ records, fields, table }) {
+export default function OperationalTable({ records, fields, table, interactionsTable, interactionsRecords }) {
   const [expandedRow,     setExpandedRow]     = useState(null);
   const [draftValues,     setDraftValues]     = useState({});
   const [origValues,      setOrigValues]      = useState({});
@@ -101,12 +102,24 @@ export default function OperationalTable({ records, fields, table }) {
   useEffect(() => { origRef.current         = origValues;   }, [origValues]);
   useEffect(() => { expandedRowRef.current  = expandedRow;  }, [expandedRow]);
 
-  const gConfig       = useGlobalConfig();
-  const presets       = gConfig.get(PRESETS_KEY) ?? [];
-  const responseTimes = gConfig.get(RESPONSE_TIMES_KEY) ?? {};
+  const gConfig = useGlobalConfig();
+  const presets = gConfig.get(PRESETS_KEY) ?? [];
 
-  const responseTimesRef = useRef(responseTimes);
-  useEffect(() => { responseTimesRef.current = responseTimes; }, [responseTimes]);
+  const [interactionsModal,   setInteractionsModal]   = useState(null);
+  const [interactionDetailId, setInteractionDetailId] = useState(null);
+
+  const interactionsById = useMemo(
+    () => new Map((interactionsRecords ?? []).map((r) => [r.id, r])),
+    [interactionsRecords]
+  );
+  const intxActionField = useMemo(
+    () => interactionsTable?.getFieldByNameIfExists('פעולה'),
+    [interactionsTable]
+  );
+  const intxScoreField = useMemo(
+    () => interactionsTable?.getFieldByNameIfExists('הוספה לדירוג'),
+    [interactionsTable]
+  );
 
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 60_000);
@@ -156,8 +169,10 @@ export default function OperationalTable({ records, fields, table }) {
     if (filters.statuses.length)     n++;
     if (filters.sources.length)      n++;
     if (filters.services.length)     n++;
-    if (filters.minScore)            n++;
-    if (filters.dateRange !== 'all') n++;
+    if (filters.minScore)                n++;
+    if (filters.minInteractions)         n++;
+    if (filters.messageSent !== 'all')   n++;
+    if (filters.dateRange !== 'all')     n++;
     if (filters.newOnly)             n++;
     return n;
   }, [filters]);
@@ -210,6 +225,21 @@ export default function OperationalTable({ records, fields, table }) {
         });
       }
     }
+    if (filters.minInteractions) {
+      const min = Number(filters.minInteractions);
+      base = base.filter((r) => {
+        const val = fields.interactions ? r.getCellValue(fields.interactions) : null;
+        const count = Array.isArray(val) ? val.length : (val != null ? Number(val) : 0);
+        return count >= min;
+      });
+    }
+    if (filters.messageSent !== 'all') {
+      base = base.filter((r) => {
+        const val = fields.messageSent ? r.getCellValue(fields.messageSent) : null;
+        const isSent = val === true || val === 'כן' || val === 'נשלחה';
+        return filters.messageSent === 'yes' ? isSent : !isSent;
+      });
+    }
     if (filters.newOnly) {
       base = base.filter((r) => isNewLead(r, fields.createdTime));
     }
@@ -255,13 +285,6 @@ export default function OperationalTable({ records, fields, table }) {
 
     if (fields.status && draft.status !== orig.status) {
       updates[fields.status.id] = draft.status ? { name: draft.status } : null;
-      if (orig.status === 'לא נוצר קשר' && draft.status && draft.status !== 'לא נוצר קשר') {
-        const createdRaw = fields.createdTime ? record.getCellValue(fields.createdTime) : record.createdTime;
-        const existing = { ...responseTimesRef.current };
-        existing[record.id] = { createdAt: new Date(createdRaw).getTime(), changedAt: Date.now() };
-        responseTimesRef.current = existing;
-        await globalConfig.setAsync(RESPONSE_TIMES_KEY, existing);
-      }
     }
     if (fields.nextAction && draft.nextAction !== orig.nextAction) {
       updates[fields.nextAction.id] = (draft.nextAction || '').trim().slice(0, MAX_TEXT_LENGTH);
@@ -413,6 +436,23 @@ export default function OperationalTable({ records, fields, table }) {
               </div>
             )}
 
+            {fields.messageSent && (
+              <div className="filter-group">
+                <span className="filter-label">נשלחה הודעה</span>
+                <div className="filter-chips-row">
+                  {[{ key: 'all', label: 'הכל' }, { key: 'yes', label: 'כן' }, { key: 'no', label: 'לא' }].map(({ key, label }) => (
+                    <button
+                      key={key}
+                      className={`filter-chip${filters.messageSent === key ? ' filter-chip--active' : ''}`}
+                      onClick={() => setFilter('messageSent', key)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="filter-group filter-group--row">
               {fields.score && (
                 <label className="filter-inline-label">
@@ -422,6 +462,19 @@ export default function OperationalTable({ records, fields, table }) {
                     min="0"
                     value={filters.minScore}
                     onChange={(e) => setFilter('minScore', e.target.value)}
+                    className="filter-number-input"
+                    placeholder="0"
+                  />
+                </label>
+              )}
+              {fields.interactions && (
+                <label className="filter-inline-label">
+                  <span className="filter-label">אינטרקציות מינ׳</span>
+                  <input
+                    type="number"
+                    min="0"
+                    value={filters.minInteractions}
+                    onChange={(e) => setFilter('minInteractions', e.target.value)}
                     className="filter-number-input"
                     placeholder="0"
                   />
@@ -476,10 +529,12 @@ export default function OperationalTable({ records, fields, table }) {
                 <Table.ColumnHeaderCell style={{ width: 40 }}></Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>תאריך יצירה</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>הערות</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell>שווי עסקה</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>מקור</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>סוג שירות</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>זמן חזרה</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>ניקוד</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>נשלחה הודעה</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>אינטרקציות</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>סטטוס</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>שם</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell style={{ width: 36 }}></Table.ColumnHeaderCell>
@@ -488,7 +543,7 @@ export default function OperationalTable({ records, fields, table }) {
             <Table.Body>
               {filtered.length === 0 && (
                 <Table.Row>
-                  <Table.Cell colSpan={10}>
+                  <Table.Cell colSpan={12}>
                     <Text color="gray" align="center" style={{ display: 'block', padding: '24px' }}>
                       אין לידים להצגה
                     </Text>
@@ -504,20 +559,28 @@ export default function OperationalTable({ records, fields, table }) {
                 const service    = fields.serviceType ? record.getCellValue(fields.serviceType)?.name : null;
                 const source     = fields.leadSource  ? record.getCellValue(fields.leadSource)?.name  : null;
                 const dealVal    = fields.dealValue   ? record.getCellValue(fields.dealValue)         : null;
-                const name       = fields.name        ? record.getCellValue(fields.name)              : record.name;
-                const waUrl      = buildWhatsAppUrl(phone);
+                const name         = fields.name         ? record.getCellValue(fields.name)              : record.name;
+                const score        = fields.score        ? record.getCellValue(fields.score)              : null;
+                const interactions = fields.interactions ? record.getCellValue(fields.interactions)       : null;
+                const messageSent  = fields.messageSent  ? record.getCellValue(fields.messageSent)        : null;
+                const waUrl        = buildWhatsAppUrl(phone);
                 const createdRaw = fields.createdTime ? record.getCellValue(fields.createdTime) : record.createdTime;
                 const createdStr = createdRaw
                   ? new Date(createdRaw).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' })
                   : '—';
                 const dealDisplay = dealVal != null ? `₪${Number(dealVal).toLocaleString('he-IL')}` : '—';
-                const rt = responseTimes[record.id];
+                const responseWaitMin = fields.responseWait ? record.getCellValue(fields.responseWait) : null;
                 let waitDisplay = '—';
-                if (rt) {
-                  waitDisplay = formatElapsed(rt.changedAt - rt.createdAt) + ' ✓';
+                let waitColor = 'gray';
+                if (responseWaitMin != null && responseWaitMin > 0) {
+                  waitDisplay = formatMinutes(responseWaitMin) + ' ✓';
+                  waitColor = 'green';
                 } else if (status === 'לא נוצר קשר') {
                   const cr = fields.createdTime ? record.getCellValue(fields.createdTime) : record.createdTime;
-                  if (cr) waitDisplay = formatElapsed(Date.now() - new Date(cr).getTime());
+                  if (cr) {
+                    waitDisplay = formatMinutes((Date.now() - new Date(cr).getTime()) / 60000);
+                    waitColor = 'red';
+                  }
                 }
 
                 return (
@@ -565,22 +628,6 @@ export default function OperationalTable({ records, fields, table }) {
                       )}
                     </Table.Cell>
 
-                    {/* שווי עסקה */}
-                    <Table.Cell>
-                      {isExpanded && fields.dealValue ? (
-                        <input
-                          type="number"
-                          className="cell-edit-input"
-                          value={draftValues.dealValue}
-                          onChange={(e) => setDraft('dealValue', e.target.value)}
-                          placeholder="₪0"
-                          min="0"
-                        />
-                      ) : (
-                        <Text color="amber" weight="bold" size="2">{dealDisplay}</Text>
-                      )}
-                    </Table.Cell>
-
                     {/* מקור ליד */}
                     <Table.Cell>
                       {isExpanded && fields.leadSource && sourceChoices.length > 0 ? (
@@ -621,11 +668,45 @@ export default function OperationalTable({ records, fields, table }) {
                     <Table.Cell>
                       <Text
                         size="1"
-                        color={rt ? 'green' : (status === 'לא נוצר קשר' ? 'red' : 'gray')}
+                        color={waitColor}
                         style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}
                       >
                         {waitDisplay}
                       </Text>
+                    </Table.Cell>
+
+                    {/* ניקוד */}
+                    <Table.Cell>
+                      <Text size="2" weight="bold" color="indigo" align="center" style={{ display: 'block' }}>
+                        {score != null ? score : '—'}
+                      </Text>
+                    </Table.Cell>
+
+                    {/* נשלחה הודעה */}
+                    <Table.Cell>
+                      {messageSent === true || messageSent === 'כן' || messageSent === 'נשלחה' ? (
+                        <Badge color="green" variant="soft">כן</Badge>
+                      ) : messageSent === false || messageSent === 'לא' ? (
+                        <Badge color="gray" variant="soft">לא</Badge>
+                      ) : messageSent ? (
+                        <Badge color="gray" variant="soft">{String(messageSent)}</Badge>
+                      ) : (
+                        <Text color="gray" size="2">—</Text>
+                      )}
+                    </Table.Cell>
+
+                    {/* אינטרקציות */}
+                    <Table.Cell>
+                      {Array.isArray(interactions) && interactions.length > 0 ? (
+                        <button
+                          className="interactions-count-btn"
+                          onClick={(e) => { e.stopPropagation(); setInteractionsModal({ leadName: name || '—', linkedIds: interactions.map((i) => i.id) }); }}
+                        >
+                          {interactions.length}
+                        </button>
+                      ) : (
+                        <Text size="2" align="center" color="gray" style={{ display: 'block' }}>—</Text>
+                      )}
                     </Table.Cell>
 
                     {/* סטטוס */}
@@ -705,6 +786,81 @@ export default function OperationalTable({ records, fields, table }) {
             </div>
           ))}
         </aside>
+      )}
+
+      {/* Interactions modal */}
+      {interactionsModal && (
+        <div
+          className="interactions-overlay"
+          onMouseDown={(e) => { if (e.target === e.currentTarget) { setInteractionsModal(null); setInteractionDetailId(null); } }}
+        >
+          <div className="interactions-modal">
+            <div className="interactions-modal__header">
+              {interactionDetailId ? (
+                <button className="interactions-modal__back" onClick={() => setInteractionDetailId(null)} title="חזרה">&#8592;</button>
+              ) : (
+                <span style={{ width: 28 }} />
+              )}
+              <span className="interactions-modal__title">
+                {interactionDetailId ? 'פרטי אינטרקציה' : `אינטרקציות — ${interactionsModal.leadName}`}
+              </span>
+              <button className="interactions-modal__close" onClick={() => { setInteractionsModal(null); setInteractionDetailId(null); }} title="סגור">×</button>
+            </div>
+
+            <div className="interactions-modal__body">
+              {interactionDetailId ? (() => {
+                const rec = interactionsById.get(interactionDetailId);
+                if (!rec) return <div className="interaction-detail__fields"><span style={{ color: 'var(--gray-9)', fontSize: '0.85rem' }}>לא נמצא</span></div>;
+                const actionVal  = intxActionField ? rec.getCellValue(intxActionField) : null;
+                const actionName = Array.isArray(actionVal) ? actionVal[0]?.name : (actionVal?.name ?? rec.name ?? '—');
+                const scoreRaw   = intxScoreField ? rec.getCellValue(intxScoreField) : null;
+                const scoreItem  = Array.isArray(scoreRaw) ? scoreRaw[0] : scoreRaw;
+                const score      = scoreItem != null && typeof scoreItem === 'object' ? scoreItem.value : scoreItem;
+                return (
+                  <div className="interaction-detail__fields">
+                    <div className="interaction-detail__field">
+                      <span className="interaction-detail__label">פעולה</span>
+                      <span className="interaction-detail__value">
+                        <span className="interaction-action-badge">{actionName || '—'}</span>
+                      </span>
+                    </div>
+                    <div className="interaction-detail__field">
+                      <span className="interaction-detail__label">הוספה לדירוג</span>
+                      <span className="interaction-detail__value" style={{ fontWeight: 700, color: 'var(--indigo-11)' }}>
+                        {score != null ? `+${score}` : '—'}
+                      </span>
+                    </div>
+                    <div className="interaction-detail__field">
+                      <span className="interaction-detail__label">מזהה רשומה</span>
+                      <span className="interaction-detail__value" style={{ color: 'var(--gray-9)', fontSize: '0.78rem' }}>{rec.id}</span>
+                    </div>
+                  </div>
+                );
+              })() : (
+                interactionsModal.linkedIds.length === 0 ? (
+                  <div style={{ padding: '20px', textAlign: 'center', color: 'var(--gray-9)', fontSize: '0.85rem' }}>אין אינטרקציות</div>
+                ) : interactionsModal.linkedIds.map((id) => {
+                  const rec = interactionsById.get(id);
+                  if (!rec) return null;
+                  const actionVal  = intxActionField ? rec.getCellValue(intxActionField) : null;
+                  const actionName = Array.isArray(actionVal) ? actionVal[0]?.name : (actionVal?.name ?? rec.name ?? '—');
+                  const scoreRaw   = intxScoreField ? rec.getCellValue(intxScoreField) : null;
+                  const scoreItem  = Array.isArray(scoreRaw) ? scoreRaw[0] : scoreRaw;
+                  const score      = scoreItem != null && typeof scoreItem === 'object' ? scoreItem.value : scoreItem;
+                  return (
+                    <div key={id} className="interaction-item" onClick={() => setInteractionDetailId(id)}>
+                      <span className="interaction-item__action">{actionName || '—'}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {score != null && <span className="interaction-item__score">+{score}</span>}
+                        <span className="interaction-item__arrow">&#8249;</span>
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Save confirmation dialog */}
