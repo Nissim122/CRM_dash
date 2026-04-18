@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Card, Text, Heading, Flex, Table, Badge, Callout } from '@radix-ui/themes';
 import { globalConfig } from '@airtable/blocks';
 import { useGlobalConfig } from '@airtable/blocks/ui';
+import RevenueBarChart from './RevenueBarChart';
 
 function getSelectChoices(field) {
   return field?.options?.choices?.map((c) => c.name) ?? [];
@@ -284,6 +285,10 @@ export default function CustomersView({
             </Card>
           );
         })}
+      </div>
+
+      <div className="analytics-row">
+        <RevenueBarChart salesRecords={salesRecords} salesFields={salesFields} period={period} />
       </div>
 
       <div className="ops-layout">
