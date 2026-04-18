@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useBase, useRecords, useWatchable } from '@airtable/blocks/ui';
 import { viewport } from '@airtable/blocks';
 import { Theme } from '@radix-ui/themes';
@@ -25,6 +25,7 @@ export default function App() {
   const [period, setPeriod]       = useState('month');
   const [activeView, setActiveView] = useState('leads');
   useWatchable(viewport, ['isFullscreen']);
+  useEffect(() => { viewport.enterFullscreenIfPossible(); }, []);
 
   const leadsTable     = base.getTableByNameIfExists('לידים');
   const salesTable     = base.getTableByNameIfExists('מכירות');
