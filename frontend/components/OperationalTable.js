@@ -390,6 +390,7 @@ export default function OperationalTable({ records, fields, table }) {
           <Table.Header>
             <Table.Row>
               <Table.ColumnHeaderCell style={{ width: 40 }}></Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>תאריך יצירה</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell>פעולה הבאה</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell>שווי עסקה</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell>מקור</Table.ColumnHeaderCell>
@@ -401,7 +402,7 @@ export default function OperationalTable({ records, fields, table }) {
           <Table.Body>
             {filtered.length === 0 && (
               <Table.Row>
-                <Table.Cell colSpan={7}>
+                <Table.Cell colSpan={8}>
                   <Text color="gray" align="center" style={{ display: 'block', padding: '24px' }}>
                     אין לידים להצגה
                   </Text>
@@ -418,6 +419,10 @@ export default function OperationalTable({ records, fields, table }) {
               const dealVal = fields.dealValue   ? record.getCellValue(fields.dealValue)         : null;
               const name    = fields.name        ? record.getCellValue(fields.name)              : record.name;
               const waUrl   = buildWhatsAppUrl(phone);
+              const createdRaw = fields.createdTime ? record.getCellValue(fields.createdTime) : record.createdTime;
+              const createdStr = createdRaw
+                ? new Date(createdRaw).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' })
+                : '—';
 
               const dealDisplay = dealVal != null
                 ? `₪${Number(dealVal).toLocaleString('he-IL')}`
@@ -439,6 +444,11 @@ export default function OperationalTable({ records, fields, table }) {
                     ) : (
                       <Text color="gray" size="1">—</Text>
                     )}
+                  </Table.Cell>
+
+                  {/* תאריך יצירה */}
+                  <Table.Cell>
+                    <Text color="gray" size="1" style={{ whiteSpace: 'nowrap' }}>{createdStr}</Text>
                   </Table.Cell>
 
                   {/* פעולה הבאה */}

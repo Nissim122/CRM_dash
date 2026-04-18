@@ -30,6 +30,7 @@ const EMPTY_FILTERS = { search: '', minRevenue: '' };
 export default function CustomersView({
   customersRecords, customersFields,
   salesRecords, salesFields,
+  leadsRecords, leadsFields,
   period,
 }) {
   const [showFilters,    setShowFilters]    = useState(false);
@@ -84,6 +85,12 @@ export default function CustomersView({
   }, [customersRecords, salesRecords, salesFields, period]);
 
   const periodLabel = PERIOD_LABEL[period];
+
+  const leadsById = useMemo(() => {
+    const map = new Map();
+    for (const r of (leadsRecords ?? [])) map.set(r.id, r);
+    return map;
+  }, [leadsRecords]);
 
   const revenueByCustomer = useMemo(() => {
     const map = new Map();
@@ -218,6 +225,8 @@ export default function CustomersView({
             <Table.Header>
               <Table.Row>
                 <Table.ColumnHeaderCell>שם לקוח</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>מקור ליד</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>תאריך יצירה</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>סה"כ הכנסות</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>מכירות</Table.ColumnHeaderCell>
               </Table.Row>
@@ -225,7 +234,7 @@ export default function CustomersView({
             <Table.Body>
               {filteredCustomers.length === 0 && (
                 <Table.Row>
-                  <Table.Cell colSpan={3}>
+                  <Table.Cell colSpan={5}>
                     <Text color="gray" align="center" style={{ display: 'block', padding: '24px' }}>
                       אין לקוחות להצגה
                     </Text>
@@ -241,9 +250,24 @@ export default function CustomersView({
                 const salesCount = Array.isArray(salesLinks) ? salesLinks.length : 0;
                 const totalStr   = totalRaw ? `₪${totalRaw.toLocaleString('he-IL')}` : '—';
 
+                const leadRecord   = leadLinks?.[0] ? leadsById.get(leadLinks[0].id) : null;
+                const leadSource   = leadRecord && leadsFields?.leadSource
+                  ? leadRecord.getCellValue(leadsFields.leadSource)?.name ?? '—'
+                  : '—';
+                const createdRaw   = leadRecord && leadsFields?.createdTime
+                  ? leadRecord.getCellValue(leadsFields.createdTime)
+                  : null;
+                const createdStr   = createdRaw
+                  ? new Date(createdRaw).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' })
+                  : '—';
+
                 return (
                   <Table.Row key={record.id}>
                     <Table.Cell><Text>{name}</Text></Table.Cell>
+                    <Table.Cell><Text size="2">{leadSource}</Text></Table.Cell>
+                    <Table.Cell>
+                      <Text color="gray" size="1" style={{ whiteSpace: 'nowrap' }}>{createdStr}</Text>
+                    </Table.Cell>
                     <Table.Cell>
                       <Text color="amber" weight="bold">{totalStr}</Text>
                     </Table.Cell>

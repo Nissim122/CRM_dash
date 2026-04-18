@@ -142,6 +142,8 @@ export default function App() {
             customersFields={customersFields}
             salesRecords={salesRecords}
             salesFields={salesFields}
+            leadsRecords={records}
+            leadsFields={fields}
             period={period}
           />
         )}
