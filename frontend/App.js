@@ -13,6 +13,7 @@ const PERIODS = [
   { key: 'week',  label: 'שבוע' },
   { key: 'month', label: 'חודש' },
   { key: 'year',  label: 'שנה'  },
+  { key: 'all',   label: 'תמיד' },
 ];
 
 const VIEWS = [

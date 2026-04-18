@@ -21,9 +21,10 @@ const CARD_META = {
   avgResponse: { color: '#f43f5e', icon: '⏱' },
 };
 
-const PERIOD_LABEL = { week: 'השבוע', month: 'החודש', year: 'השנה' };
+const PERIOD_LABEL = { week: 'השבוע', month: 'החודש', year: 'השנה', all: 'תמיד' };
 
 function getPeriodStart(period) {
+  if (period === 'all') return new Date(0);
   const now = new Date();
   if (period === 'week') {
     const d = new Date(now);
@@ -76,7 +77,7 @@ export default function KpiBar({ records, fields, period = 'month' }) {
   const p = PERIOD_LABEL[period];
 
   const cards = [
-    { id: 'leads',       label: `לידים חדשים ${p}`,   value: stats.newInPeriod },
+    { id: 'leads',       label: `מספר לידים ${p}`,     value: stats.newInPeriod },
     { id: 'closed',      label: `נסגרו כלקוחות ${p}`, value: stats.closedInPeriod },
     { id: 'conversion',  label: 'אחוז המרה',           value: `${stats.conversion}%` },
     { id: 'active',      label: 'לידים פעילים',        value: stats.activeLeads },

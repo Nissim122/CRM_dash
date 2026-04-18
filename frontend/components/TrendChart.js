@@ -9,6 +9,7 @@ const CHART_TITLES = {
   week:  'מגמת לידים — 7 ימים אחרונים',
   month: 'מגמת לידים — 30 ימים אחרונים',
   year:  'מגמת לידים — 12 חודשים אחרונים',
+  all:   'מגמת לידים — כל הזמן',
 };
 
 function buildDayBuckets(count) {
@@ -50,6 +51,32 @@ export default function TrendChart({ records, fields, period = 'month' }) {
       return Object.entries(buckets).map(([date, count]) => ({ date, לידים: count }));
     }
 
+    if (period === 'all') {
+      let earliest = null;
+      for (const record of records) {
+        const raw = fields.createdTime ? record.getCellValue(fields.createdTime) : record.createdTime;
+        if (!raw) continue;
+        const d = new Date(raw);
+        if (!earliest || d < earliest) earliest = d;
+      }
+      if (!earliest) return [];
+      const buckets = {};
+      const cursor = new Date(earliest.getFullYear(), earliest.getMonth(), 1);
+      const end = new Date(today.getFullYear(), today.getMonth(), 1);
+      while (cursor <= end) {
+        buckets[`${cursor.getMonth() + 1}/${String(cursor.getFullYear()).slice(2)}`] = 0;
+        cursor.setMonth(cursor.getMonth() + 1);
+      }
+      for (const record of records) {
+        const raw = fields.createdTime ? record.getCellValue(fields.createdTime) : record.createdTime;
+        if (!raw) continue;
+        const created = new Date(raw);
+        const key = `${created.getMonth() + 1}/${String(created.getFullYear()).slice(2)}`;
+        if (key in buckets) buckets[key]++;
+      }
+      return Object.entries(buckets).map(([date, count]) => ({ date, לידים: count }));
+    }
+
     const dayCount = period === 'week' ? 7 : 30;
     const buckets = buildDayBuckets(dayCount);
 
@@ -80,7 +107,7 @@ export default function TrendChart({ records, fields, period = 'month' }) {
               dataKey="date"
               tick={{ fill: 'var(--gray-10)', fontSize: 11 }}
               tickLine={false}
-              interval={period === 'week' ? 0 : period === 'year' ? 1 : 4}
+              interval={period === 'week' ? 0 : (period === 'year' || period === 'all') ? 1 : 4}
             />
             <YAxis
               tick={{ fill: 'var(--gray-10)', fontSize: 11 }}
@@ -101,7 +128,7 @@ export default function TrendChart({ records, fields, period = 'month' }) {
               dataKey="לידים"
               stroke="var(--indigo-9)"
               strokeWidth={2.5}
-              dot={period === 'week'}
+              dot={period === 'week' ? true : false}
               activeDot={{ r: 5, fill: 'var(--indigo-9)' }}
             />
           </LineChart>

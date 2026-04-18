@@ -6,6 +6,7 @@ import { useGlobalConfig } from '@airtable/blocks/ui';
 const PRESETS_KEY = 'filterPresets_customers';
 
 function getPeriodStart(period) {
+  if (period === 'all') return new Date(0);
   const now = new Date();
   if (period === 'week') {
     const d = new Date(now);
@@ -23,7 +24,7 @@ const CARD_META = {
   sales:   { color: '#10b981', icon: '🛒' },
 };
 
-const PERIOD_LABEL = { week: 'השבוע', month: 'החודש', year: 'השנה' };
+const PERIOD_LABEL = { week: 'השבוע', month: 'החודש', year: 'השנה', all: 'תמיד' };
 
 const EMPTY_FILTERS = { search: '', minRevenue: '' };
 
@@ -81,8 +82,21 @@ export default function CustomersView({
       }
     }
 
-    return { total: customersRecords.length, revenueInPeriod, salesInPeriod };
-  }, [customersRecords, salesRecords, salesFields, period]);
+    const leadsMap = new Map((leadsRecords ?? []).map((r) => [r.id, r]));
+    let customersInPeriod = 0;
+    for (const record of customersRecords) {
+      const leadLinks = customersFields.lead ? record.getCellValue(customersFields.lead) : null;
+      const leadRec = leadsMap.get(leadLinks?.[0]?.id);
+      if (!leadRec) continue;
+      const createdRaw = leadsFields?.createdTime
+        ? leadRec.getCellValue(leadsFields.createdTime)
+        : leadRec.createdTime;
+      if (!createdRaw || new Date(createdRaw) < startDate) continue;
+      customersInPeriod++;
+    }
+
+    return { total: customersRecords.length, customersInPeriod, revenueInPeriod, salesInPeriod };
+  }, [customersRecords, customersFields, salesRecords, salesFields, leadsRecords, leadsFields, period]);
 
   const periodLabel = PERIOD_LABEL[period];
 
@@ -119,9 +133,9 @@ export default function CustomersView({
   }, [customersRecords, customersFields, filters, revenueByCustomer]);
 
   const cards = [
-    { id: 'total',   label: 'סה"כ לקוחות',           value: stats.total },
-    { id: 'revenue', label: `הכנסות ${periodLabel}`,  value: `₪${stats.revenueInPeriod.toLocaleString('he-IL')}` },
-    { id: 'sales',   label: `מכירות ${periodLabel}`,  value: stats.salesInPeriod },
+    { id: 'total',   label: `סה"כ לקוחות ${periodLabel}`, value: stats.customersInPeriod },
+    { id: 'revenue', label: `הכנסות ${periodLabel}`,       value: `₪${stats.revenueInPeriod.toLocaleString('he-IL')}` },
+    { id: 'sales',   label: `מכירות ${periodLabel}`,       value: stats.salesInPeriod },
   ];
 
   return (
