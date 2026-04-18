@@ -82,9 +82,11 @@ export default function App() {
   const customersFields = useMemo(() => {
     if (!customersTable) return {};
     return {
-      lead:  customersTable.getFieldByNameIfExists('לקוח'),
-      sales: customersTable.getFieldByNameIfExists('מכירות'),
-      total: customersTable.getFieldByNameIfExists('סה"כ'),
+      lead:          customersTable.getFieldByNameIfExists('לקוח'),
+      sales:         customersTable.getFieldByNameIfExists('מכירות'),
+      total:         customersTable.getFieldByNameIfExists('סה"כ'),
+      projectStatus: customersTable.getFieldByNameIfExists('סטטוס פרוייקט'),
+      notes:         customersTable.getFieldByNameIfExists('הערות ללקוח'),
     };
   }, [customersTable]);
 
@@ -155,6 +157,7 @@ export default function App() {
           <CustomersView
             customersRecords={customersRecords}
             customersFields={customersFields}
+            customersTable={customersTable}
             salesRecords={salesRecords}
             salesFields={salesFields}
             leadsRecords={records}

@@ -527,10 +527,10 @@ export default function OperationalTable({ records, fields, table, interactionsT
             <Table.Header>
               <Table.Row>
                 <Table.ColumnHeaderCell style={{ width: 40 }}></Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>הצעה נשלחה</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>תאריך יצירה</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>הערות</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>מקור</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell>סוג שירות</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>זמן חזרה</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>ניקוד</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>נשלחה הודעה</Table.ColumnHeaderCell>
@@ -596,10 +596,25 @@ export default function OperationalTable({ records, fields, table, interactionsT
                     {/* WhatsApp */}
                     <Table.Cell>
                       {waUrl ? (
-                        <a href={waUrl} target="_blank" rel="noopener noreferrer" className="whatsapp-btn" title="פתח וואטסאפ">💬</a>
+                        <a href={waUrl} target="_blank" rel="noopener noreferrer" className="whatsapp-btn" title="פתח וואטסאפ">
+                          <svg viewBox="0 0 32 32" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="16" cy="16" r="16" fill="#25D366"/>
+                            <path d="M23.5 8.5A9.93 9.93 0 0 0 16 5.5C10.753 5.5 6.5 9.753 6.5 15a9.45 9.45 0 0 0 1.27 4.77L6.5 26.5l6.9-1.81A9.94 9.94 0 0 0 16 25.5c5.247 0 9.5-4.253 9.5-9.5 0-2.54-.99-4.93-2.79-6.72l-.21-.28zM16 23.7a8.16 8.16 0 0 1-4.16-1.14l-.3-.18-3.1.81.83-3.03-.2-.31A8.2 8.2 0 1 1 16 23.7zm4.49-6.13c-.25-.12-1.47-.72-1.7-.8-.23-.08-.4-.12-.56.12-.16.25-.63.8-.77.97-.14.17-.28.19-.52.06-.25-.12-1.05-.39-2-1.23-.74-.66-1.24-1.47-1.38-1.72-.14-.25-.01-.38.11-.5.11-.11.25-.29.37-.43.12-.14.16-.25.25-.41.08-.16.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.16 0-.43.06-.65.31-.23.25-.87.85-.87 2.07s.89 2.4 1.01 2.57c.12.16 1.75 2.67 4.24 3.75.59.26 1.05.41 1.41.52.59.19 1.13.16 1.55.1.47-.07 1.47-.6 1.68-1.18.21-.58.21-1.08.14-1.18-.06-.1-.23-.16-.48-.28z" fill="#fff"/>
+                          </svg>
+                        </a>
                       ) : (
                         <Text color="gray" size="1">—</Text>
                       )}
+                    </Table.Cell>
+
+                    {/* הצעה נשלחה בתאריך */}
+                    <Table.Cell>
+                      {(() => {
+                        const raw = fields.proposalDate ? record.getCellValue(fields.proposalDate) : null;
+                        if (!raw) return <Text color="gray" size="1">—</Text>;
+                        const str = new Date(raw).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' });
+                        return <Text size="1" style={{ whiteSpace: 'nowrap', color: 'var(--indigo-11)' }}>{str}</Text>;
+                      })()}
                     </Table.Cell>
 
                     {/* תאריך יצירה */}
@@ -646,24 +661,6 @@ export default function OperationalTable({ records, fields, table, interactionsT
                       )}
                     </Table.Cell>
 
-                    {/* סוג שירות */}
-                    <Table.Cell>
-                      {isExpanded && fields.serviceType && serviceChoices.length > 0 ? (
-                        <select
-                          className="cell-edit-select"
-                          value={draftValues.serviceType || ''}
-                          onChange={(e) => setDraft('serviceType', e.target.value || null)}
-                        >
-                          <option value="">—</option>
-                          {serviceChoices.map((s) => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                      ) : (
-                        service
-                          ? <Badge color="gray" variant="soft">{service}</Badge>
-                          : <Text color="gray" size="2">—</Text>
-                      )}
-                    </Table.Cell>
-
                     {/* זמן חזרה */}
                     <Table.Cell>
                       <Text
@@ -684,15 +681,18 @@ export default function OperationalTable({ records, fields, table, interactionsT
 
                     {/* נשלחה הודעה */}
                     <Table.Cell>
-                      {messageSent === true || messageSent === 'כן' || messageSent === 'נשלחה' ? (
-                        <Badge color="green" variant="soft">כן</Badge>
-                      ) : messageSent === false || messageSent === 'לא' ? (
-                        <Badge color="gray" variant="soft">לא</Badge>
-                      ) : messageSent ? (
-                        <Badge color="gray" variant="soft">{String(messageSent)}</Badge>
-                      ) : (
-                        <Text color="gray" size="2">—</Text>
-                      )}
+                      {(() => {
+                        const sent = messageSent === true || messageSent === 'כן' || messageSent === 'נשלחה';
+                        return (
+                          <span className={`msg-checkbox${sent ? ' msg-checkbox--checked' : ''}`} aria-label={sent ? 'נשלחה' : 'לא נשלחה'}>
+                            {sent && (
+                              <svg viewBox="0 0 12 10" width="10" height="10" fill="none">
+                                <polyline points="1,5 4.5,8.5 11,1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
+                          </span>
+                        );
+                      })()}
                     </Table.Cell>
 
                     {/* אינטרקציות */}
