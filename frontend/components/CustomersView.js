@@ -1,5 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { Card, Text, Heading, Flex, Table, Badge } from '@radix-ui/themes';
+import { globalConfig } from '@airtable/blocks';
+import { useGlobalConfig } from '@airtable/blocks/ui';
+
+const PRESETS_KEY = 'filterPresets_customers';
 
 function getPeriodStart(period) {
   const now = new Date();
@@ -28,13 +32,36 @@ export default function CustomersView({
   salesRecords, salesFields,
   period,
 }) {
-  const [showFilters,  setShowFilters]  = useState(false);
-  const [filters,      setFilters]      = useState(EMPTY_FILTERS);
+  const [showFilters,    setShowFilters]    = useState(false);
+  const [filters,        setFilters]        = useState(EMPTY_FILTERS);
+  const [showSaveInput,  setShowSaveInput]  = useState(false);
+  const [presetName,     setPresetName]     = useState('');
+
+  const gConfig = useGlobalConfig();
+  const presets  = gConfig.get(PRESETS_KEY) ?? [];
 
   const activeFilterCount = (filters.search ? 1 : 0) + (filters.minRevenue ? 1 : 0);
 
   function setFilter(key, val) { setFilters((f) => ({ ...f, [key]: val })); }
   function resetFilters()      { setFilters(EMPTY_FILTERS); }
+
+  async function savePreset() {
+    const name = presetName.trim();
+    if (!name) return;
+    const entry = { id: String(Date.now()), name, filters: { ...filters } };
+    await globalConfig.setAsync(PRESETS_KEY, [...presets, entry]);
+    setPresetName('');
+    setShowSaveInput(false);
+  }
+
+  async function deletePreset(id) {
+    await globalConfig.setAsync(PRESETS_KEY, presets.filter((p) => p.id !== id));
+  }
+
+  function applyPreset(preset) {
+    setFilters(preset.filters);
+    setShowFilters(false);
+  }
 
   const stats = useMemo(() => {
     const startDate = getPeriodStart(period);
@@ -123,6 +150,18 @@ export default function CustomersView({
           </Flex>
         </Flex>
 
+        {presets.length > 0 && (
+          <div className="preset-bar">
+            <span className="preset-bar__label">תבניות:</span>
+            {presets.map((p) => (
+              <span key={p.id} className="preset-chip">
+                <button className="preset-chip__apply" onClick={() => applyPreset(p)}>{p.name}</button>
+                <button className="preset-chip__delete" onClick={() => deletePreset(p.id)} title="מחק תבנית">×</button>
+              </span>
+            ))}
+          </div>
+        )}
+
         {showFilters && (
           <div className="filter-panel">
             <div className="filter-group filter-group--wide">
@@ -146,6 +185,30 @@ export default function CustomersView({
                 onChange={(e) => setFilter('minRevenue', e.target.value)}
                 className="filter-number-input"
               />
+            </div>
+
+            <div className="filter-save-row">
+              {showSaveInput ? (
+                <>
+                  <input
+                    autoFocus
+                    type="text"
+                    className="filter-save-input"
+                    placeholder="שם התבנית…"
+                    value={presetName}
+                    onChange={(e) => setPresetName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') savePreset();
+                      if (e.key === 'Escape') { setShowSaveInput(false); setPresetName(''); }
+                    }}
+                    maxLength={40}
+                  />
+                  <button className="filter-chip filter-chip--active" onClick={savePreset}>שמור</button>
+                  <button className="filter-reset-btn" onClick={() => { setShowSaveInput(false); setPresetName(''); }}>ביטול</button>
+                </>
+              ) : (
+                <button className="filter-chip" onClick={() => setShowSaveInput(true)}>+ שמור תבנית</button>
+              )}
             </div>
           </div>
         )}

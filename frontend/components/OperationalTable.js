@@ -2,6 +2,10 @@ import React, { useState, useMemo } from 'react';
 import {
   Table, Badge, Button, Text, Select, TextArea, Flex, Callout, TextField,
 } from '@radix-ui/themes';
+import { globalConfig } from '@airtable/blocks';
+import { useGlobalConfig } from '@airtable/blocks/ui';
+
+const PRESETS_KEY = 'filterPresets_leads';
 
 const STATUSES = ['נוצר קשר', 'לא נוצר קשר', 'נרשם כלקוח', 'שיתוף פעולה', 'לא רלוונטי'];
 const ACTIVE_STATUSES = new Set(['נוצר קשר', 'לא נוצר קשר', 'שיתוף פעולה']);
@@ -65,11 +69,34 @@ function toggleInArray(arr, val) {
 }
 
 export default function OperationalTable({ records, fields, table }) {
-  const [editingCell,  setEditingCell]  = useState(null);
-  const [showAll,      setShowAll]      = useState(false);
-  const [saveError,    setSaveError]    = useState(null);
-  const [showFilters,  setShowFilters]  = useState(false);
-  const [filters,      setFilters]      = useState(EMPTY_FILTERS);
+  const [editingCell,    setEditingCell]    = useState(null);
+  const [showAll,        setShowAll]        = useState(false);
+  const [saveError,      setSaveError]      = useState(null);
+  const [showFilters,    setShowFilters]    = useState(false);
+  const [filters,        setFilters]        = useState(EMPTY_FILTERS);
+  const [showSaveInput,  setShowSaveInput]  = useState(false);
+  const [presetName,     setPresetName]     = useState('');
+
+  const gConfig = useGlobalConfig();
+  const presets  = gConfig.get(PRESETS_KEY) ?? [];
+
+  async function savePreset() {
+    const name = presetName.trim();
+    if (!name) return;
+    const entry = { id: String(Date.now()), name, filters: { ...filters } };
+    await globalConfig.setAsync(PRESETS_KEY, [...presets, entry]);
+    setPresetName('');
+    setShowSaveInput(false);
+  }
+
+  async function deletePreset(id) {
+    await globalConfig.setAsync(PRESETS_KEY, presets.filter((p) => p.id !== id));
+  }
+
+  function applyPreset(preset) {
+    setFilters(preset.filters);
+    setShowFilters(false);
+  }
 
   const serviceChoices = useMemo(() => getSelectChoices(fields.serviceType), [fields.serviceType]);
   const sourceChoices  = useMemo(() => getSelectChoices(fields.leadSource),  [fields.leadSource]);
@@ -224,6 +251,18 @@ export default function OperationalTable({ records, fields, table }) {
         </Flex>
       </Flex>
 
+      {presets.length > 0 && (
+        <div className="preset-bar">
+          <span className="preset-bar__label">תבניות:</span>
+          {presets.map((p) => (
+            <span key={p.id} className="preset-chip">
+              <button className="preset-chip__apply" onClick={() => applyPreset(p)}>{p.name}</button>
+              <button className="preset-chip__delete" onClick={() => deletePreset(p.id)} title="מחק תבנית">×</button>
+            </span>
+          ))}
+        </div>
+      )}
+
       {showFilters && (
         <div className="filter-panel">
           <div className="filter-group filter-group--wide">
@@ -322,6 +361,30 @@ export default function OperationalTable({ records, fields, table }) {
               />
               <span>חדשים בלבד</span>
             </label>
+          </div>
+
+          <div className="filter-save-row">
+            {showSaveInput ? (
+              <>
+                <input
+                  autoFocus
+                  type="text"
+                  className="filter-save-input"
+                  placeholder="שם התבנית…"
+                  value={presetName}
+                  onChange={(e) => setPresetName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') savePreset();
+                    if (e.key === 'Escape') { setShowSaveInput(false); setPresetName(''); }
+                  }}
+                  maxLength={40}
+                />
+                <button className="filter-chip filter-chip--active" onClick={savePreset}>שמור</button>
+                <button className="filter-reset-btn" onClick={() => { setShowSaveInput(false); setPresetName(''); }}>ביטול</button>
+              </>
+            ) : (
+              <button className="filter-chip" onClick={() => setShowSaveInput(true)}>+ שמור תבנית</button>
+            )}
           </div>
         </div>
       )}
