@@ -567,7 +567,7 @@ export default function OperationalTable({ records, fields, table }) {
 
                   {/* שם */}
                   <Table.Cell>
-                    <Flex align="center" gap="2">
+                    <Flex align="center" justify="center" gap="2">
                       {isNew && <Badge color="indigo" size="1">חדש!</Badge>}
                       <Text size="2">{name || '—'}</Text>
                     </Flex>
