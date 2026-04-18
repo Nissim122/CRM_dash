@@ -232,36 +232,26 @@ export default function OperationalTable({ records, fields, table }) {
   }
 
   return (
-    <div className="ops-section">
-      <Flex justify="between" align="center" mb="3">
-        <Text size="4" weight="bold">לידים — מרכז עבודה</Text>
-        <Flex gap="2" align="center">
-          <button
-            className={`filter-toggle-btn${showFilters ? ' filter-toggle-btn--active' : ''}`}
-            onClick={() => setShowFilters((v) => !v)}
-          >
-            סינון{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
-          </button>
-          {activeFilterCount > 0 && (
-            <button className="filter-reset-btn" onClick={resetFilters}>נקה הכל</button>
-          )}
-          <Button variant="soft" color="gray" size="2" onClick={() => setShowAll((v) => !v)}>
-            {showAll ? 'פעילים בלבד' : 'הצג הכל'}
-          </Button>
-        </Flex>
-      </Flex>
+    <div className="ops-layout">
 
-      {presets.length > 0 && (
-        <div className="preset-bar">
-          <span className="preset-bar__label">תבניות:</span>
-          {presets.map((p) => (
-            <span key={p.id} className="preset-chip">
-              <button className="preset-chip__apply" onClick={() => applyPreset(p)}>{p.name}</button>
-              <button className="preset-chip__delete" onClick={() => deletePreset(p.id)} title="מחק תבנית">×</button>
-            </span>
-          ))}
-        </div>
-      )}
+      <div className="ops-section">
+        <Flex justify="between" align="center" mb="3">
+          <Text size="4" weight="bold">לידים — מרכז עבודה</Text>
+          <Flex gap="2" align="center">
+            <button
+              className={`filter-toggle-btn${showFilters ? ' filter-toggle-btn--active' : ''}`}
+              onClick={() => setShowFilters((v) => !v)}
+            >
+              סינון{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+            </button>
+            {activeFilterCount > 0 && (
+              <button className="filter-reset-btn" onClick={resetFilters}>נקה הכל</button>
+            )}
+            <Button variant="soft" color="gray" size="2" onClick={() => setShowAll((v) => !v)}>
+              {showAll ? 'פעילים בלבד' : 'הצג הכל'}
+            </Button>
+          </Flex>
+        </Flex>
 
       {showFilters && (
         <div className="filter-panel">
@@ -528,6 +518,30 @@ export default function OperationalTable({ records, fields, table }) {
           </Table.Body>
         </Table.Root>
       </div>
+    </div>
+
+      {presets.length > 0 && (
+        <aside className="presets-sidebar">
+          <div className="presets-sidebar__title">תבניות שמורות</div>
+          {presets.map((p) => (
+            <div key={p.id} className="presets-sidebar__item">
+              <button
+                className="presets-sidebar__apply"
+                onClick={() => applyPreset(p)}
+                title={`החל: ${p.name}`}
+              >
+                {p.name}
+              </button>
+              <button
+                className="presets-sidebar__delete"
+                onClick={() => deletePreset(p.id)}
+                title="מחק תבנית"
+              >×</button>
+            </div>
+          ))}
+        </aside>
+      )}
+
     </div>
   );
 }

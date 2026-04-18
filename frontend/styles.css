@@ -134,6 +134,17 @@
   margin-top: 16px;
 }
 
+/* Ops Layout — table + presets sidebar */
+.ops-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.ops-layout .ops-section {
+  flex: 1;
+  min-width: 0;
+}
+
 /* Ops Section */
 .ops-section {
   padding: 20px;
@@ -143,6 +154,76 @@
 }
 .table-wrapper {
   overflow-x: auto;
+}
+
+/* Presets Sidebar */
+.presets-sidebar {
+  flex-shrink: 0;
+  width: 158px;
+  background: var(--color-surface);
+  border: 1px solid var(--gray-6);
+  border-radius: var(--radius-3);
+  padding: 14px 12px;
+}
+.presets-sidebar__title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--gray-9);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+.presets-sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.presets-sidebar__apply {
+  flex: 1;
+  min-width: 0;
+  background: var(--indigo-a3);
+  border: 1px solid var(--indigo-6);
+  border-radius: var(--radius-2);
+  color: var(--indigo-11);
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 5px 8px;
+  cursor: pointer;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 0.1s, border-color 0.1s;
+}
+.presets-sidebar__apply:hover {
+  background: var(--indigo-a5);
+  border-color: var(--indigo-8);
+}
+.presets-sidebar__apply:focus-visible {
+  outline: 2px solid var(--indigo-8);
+  outline-offset: 2px;
+}
+.presets-sidebar__delete {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--gray-5);
+  border-radius: var(--radius-1);
+  color: var(--gray-9);
+  font-size: 0.85rem;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+.presets-sidebar__delete:hover {
+  background: var(--red-a3);
+  border-color: var(--red-6);
+  color: var(--red-11);
 }
 
 /* WhatsApp */
