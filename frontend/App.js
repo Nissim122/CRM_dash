@@ -87,6 +87,7 @@ export default function App() {
       total:         customersTable.getFieldByNameIfExists('סה"כ'),
       projectStatus: customersTable.getFieldByNameIfExists('סטטוס פרוייקט'),
       notes:         customersTable.getFieldByNameIfExists('הערות ללקוח'),
+      contract:      customersTable.getFieldByNameIfExists('חוזה'),
     };
   }, [customersTable]);
 

@@ -262,6 +262,7 @@ export default function CustomersView({
   const colCount = 5
     + (customersFields.projectStatus ? 1 : 0)
     + (customersFields.notes         ? 1 : 0)
+    + (customersFields.contract      ? 1 : 0)
     + 1; // pencil column
 
   const cards = [
@@ -380,6 +381,9 @@ export default function CustomersView({
                 {customersFields.notes && (
                   <Table.ColumnHeaderCell>הערות</Table.ColumnHeaderCell>
                 )}
+                {customersFields.contract && (
+                  <Table.ColumnHeaderCell>חוזה</Table.ColumnHeaderCell>
+                )}
                 <Table.ColumnHeaderCell>שם לקוח</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell style={{ width: 36 }}></Table.ColumnHeaderCell>
               </Table.Row>
@@ -494,6 +498,29 @@ export default function CustomersView({
                         )}
                       </Table.Cell>
                     )}
+
+                    {/* חוזה */}
+                    {customersFields.contract && (() => {
+                      const attachments = record.getCellValue(customersFields.contract);
+                      const first = Array.isArray(attachments) ? attachments[0] : null;
+                      return (
+                        <Table.Cell>
+                          {first ? (
+                            <a
+                              href={first.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="contract-link"
+                              title={first.filename}
+                            >
+                              📄 {attachments.length > 1 ? `${attachments.length} קבצים` : 'פתח'}
+                            </a>
+                          ) : (
+                            <Text color="gray" size="1">—</Text>
+                          )}
+                        </Table.Cell>
+                      );
+                    })()}
 
                     {/* שם לקוח */}
                     <Table.Cell>
