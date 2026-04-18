@@ -419,15 +419,15 @@ export default function OperationalTable({ records, fields, table }) {
         <Table.Root variant="surface">
           <Table.Header>
             <Table.Row>
-              <Table.ColumnHeaderCell>שם</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell>סטטוס</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell>זמן חזרה</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell>סוג שירות</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell>מקור</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell>שווי עסקה</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell>פעולה הבאה</Table.ColumnHeaderCell>
-              <Table.ColumnHeaderCell>תאריך יצירה</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell style={{ width: 40 }}></Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>תאריך יצירה</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>פעולה הבאה</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>שווי עסקה</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>מקור</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>סוג שירות</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>זמן חזרה</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>סטטוס</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>שם</Table.ColumnHeaderCell>
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -471,59 +471,24 @@ export default function OperationalTable({ records, fields, table }) {
               return (
                 <Table.Row key={record.id} style={isNew ? { background: 'var(--indigo-a3)' } : {}}>
 
-                  {/* שם */}
+                  {/* WhatsApp */}
                   <Table.Cell>
-                    <Flex align="center" gap="2">
-                      {isNew && <Badge color="indigo" size="1">חדש!</Badge>}
-                      <Text size="2">{name || '—'}</Text>
-                    </Flex>
+                    {waUrl ? (
+                      <a
+                        href={waUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="whatsapp-btn"
+                        title="פתח וואטסאפ"
+                      >💬</a>
+                    ) : (
+                      <Text color="gray" size="1">—</Text>
+                    )}
                   </Table.Cell>
 
-                  {/* סטטוס */}
+                  {/* תאריך יצירה */}
                   <Table.Cell>
-                    <InlineSelect
-                      record={record}
-                      field={fields.status}
-                      choices={STATUSES}
-                      currentValue={status}
-                      colorMap={STATUS_COLOR}
-                    />
-                  </Table.Cell>
-
-                  {/* זמן חזרה */}
-                  <Table.Cell>
-                    <Text
-                      size="1"
-                      color={rt ? 'green' : (status === 'לא נוצר קשר' ? 'red' : 'gray')}
-                      style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}
-                    >
-                      {waitDisplay}
-                    </Text>
-                  </Table.Cell>
-
-                  {/* סוג שירות */}
-                  <Table.Cell>
-                    <InlineSelect
-                      record={record}
-                      field={fields.serviceType}
-                      choices={serviceChoices}
-                      currentValue={service}
-                    />
-                  </Table.Cell>
-
-                  {/* מקור ליד */}
-                  <Table.Cell>
-                    <InlineSelect
-                      record={record}
-                      field={fields.leadSource}
-                      choices={sourceChoices}
-                      currentValue={source}
-                    />
-                  </Table.Cell>
-
-                  {/* שווי עסקה */}
-                  <Table.Cell>
-                    <Text color="amber" weight="bold" size="2">{dealDisplay}</Text>
+                    <Text color="gray" size="1" style={{ whiteSpace: 'nowrap' }}>{createdStr}</Text>
                   </Table.Cell>
 
                   {/* פעולה הבאה */}
@@ -553,24 +518,59 @@ export default function OperationalTable({ records, fields, table }) {
                     )}
                   </Table.Cell>
 
-                  {/* תאריך יצירה */}
+                  {/* שווי עסקה */}
                   <Table.Cell>
-                    <Text color="gray" size="1" style={{ whiteSpace: 'nowrap' }}>{createdStr}</Text>
+                    <Text color="amber" weight="bold" size="2">{dealDisplay}</Text>
                   </Table.Cell>
 
-                  {/* WhatsApp */}
+                  {/* מקור ליד */}
                   <Table.Cell>
-                    {waUrl ? (
-                      <a
-                        href={waUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="whatsapp-btn"
-                        title="פתח וואטסאפ"
-                      >💬</a>
-                    ) : (
-                      <Text color="gray" size="1">—</Text>
-                    )}
+                    <InlineSelect
+                      record={record}
+                      field={fields.leadSource}
+                      choices={sourceChoices}
+                      currentValue={source}
+                    />
+                  </Table.Cell>
+
+                  {/* סוג שירות */}
+                  <Table.Cell>
+                    <InlineSelect
+                      record={record}
+                      field={fields.serviceType}
+                      choices={serviceChoices}
+                      currentValue={service}
+                    />
+                  </Table.Cell>
+
+                  {/* זמן חזרה */}
+                  <Table.Cell>
+                    <Text
+                      size="1"
+                      color={rt ? 'green' : (status === 'לא נוצר קשר' ? 'red' : 'gray')}
+                      style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}
+                    >
+                      {waitDisplay}
+                    </Text>
+                  </Table.Cell>
+
+                  {/* סטטוס */}
+                  <Table.Cell>
+                    <InlineSelect
+                      record={record}
+                      field={fields.status}
+                      choices={STATUSES}
+                      currentValue={status}
+                      colorMap={STATUS_COLOR}
+                    />
+                  </Table.Cell>
+
+                  {/* שם */}
+                  <Table.Cell>
+                    <Flex align="center" gap="2">
+                      {isNew && <Badge color="indigo" size="1">חדש!</Badge>}
+                      <Text size="2">{name || '—'}</Text>
+                    </Flex>
                   </Table.Cell>
 
                 </Table.Row>

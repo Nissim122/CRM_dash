@@ -224,11 +224,11 @@ export default function CustomersView({
           <Table.Root variant="surface">
             <Table.Header>
               <Table.Row>
-                <Table.ColumnHeaderCell>שם לקוח</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell>מקור ליד</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell>תאריך יצירה</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell>סה"כ הכנסות</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>מכירות</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>סה"כ הכנסות</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>תאריך יצירה</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>מקור ליד</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>שם לקוח</Table.ColumnHeaderCell>
               </Table.Row>
             </Table.Header>
             <Table.Body>
@@ -263,17 +263,17 @@ export default function CustomersView({
 
                 return (
                   <Table.Row key={record.id}>
-                    <Table.Cell><Text>{name}</Text></Table.Cell>
-                    <Table.Cell><Text size="2">{leadSource}</Text></Table.Cell>
                     <Table.Cell>
-                      <Text color="gray" size="1" style={{ whiteSpace: 'nowrap' }}>{createdStr}</Text>
+                      <Badge color="indigo" variant="soft">{salesCount}</Badge>
                     </Table.Cell>
                     <Table.Cell>
                       <Text color="amber" weight="bold">{totalStr}</Text>
                     </Table.Cell>
                     <Table.Cell>
-                      <Badge color="indigo" variant="soft">{salesCount}</Badge>
+                      <Text color="gray" size="1" style={{ whiteSpace: 'nowrap' }}>{createdStr}</Text>
                     </Table.Cell>
+                    <Table.Cell><Text size="2">{leadSource}</Text></Table.Cell>
+                    <Table.Cell><Text>{name}</Text></Table.Cell>
                   </Table.Row>
                 );
               })}
