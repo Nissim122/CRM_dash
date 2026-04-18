@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, Text, Heading, Flex, Table, Badge } from '@radix-ui/themes';
 
 function getPeriodStart(period) {
@@ -21,11 +21,21 @@ const CARD_META = {
 
 const PERIOD_LABEL = { week: 'השבוע', month: 'החודש', year: 'השנה' };
 
+const EMPTY_FILTERS = { search: '', minRevenue: '' };
+
 export default function CustomersView({
   customersRecords, customersFields,
   salesRecords, salesFields,
   period,
 }) {
+  const [showFilters,  setShowFilters]  = useState(false);
+  const [filters,      setFilters]      = useState(EMPTY_FILTERS);
+
+  const activeFilterCount = (filters.search ? 1 : 0) + (filters.minRevenue ? 1 : 0);
+
+  function setFilter(key, val) { setFilters((f) => ({ ...f, [key]: val })); }
+  function resetFilters()      { setFilters(EMPTY_FILTERS); }
+
   const stats = useMemo(() => {
     const startDate = getPeriodStart(period);
     let revenueInPeriod = 0;
@@ -47,6 +57,32 @@ export default function CustomersView({
   }, [customersRecords, salesRecords, salesFields, period]);
 
   const periodLabel = PERIOD_LABEL[period];
+
+  const revenueByCustomer = useMemo(() => {
+    const map = new Map();
+    for (const record of customersRecords) {
+      const totalRaw = customersFields.total ? record.getCellValue(customersFields.total) : null;
+      map.set(record.id, totalRaw != null ? Number(totalRaw) : 0);
+    }
+    return map;
+  }, [customersRecords, customersFields]);
+
+  const filteredCustomers = useMemo(() => {
+    let base = customersRecords;
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      base = base.filter((r) => {
+        const leadLinks = customersFields.lead ? r.getCellValue(customersFields.lead) : null;
+        const name = leadLinks?.[0]?.name ?? '';
+        return name.toLowerCase().includes(q);
+      });
+    }
+    if (filters.minRevenue) {
+      const min = Number(filters.minRevenue);
+      base = base.filter((r) => (revenueByCustomer.get(r.id) ?? 0) >= min);
+    }
+    return base;
+  }, [customersRecords, customersFields, filters, revenueByCustomer]);
 
   const cards = [
     { id: 'total',   label: 'סה"כ לקוחות',           value: stats.total },
@@ -72,9 +108,48 @@ export default function CustomersView({
       </div>
 
       <div className="ops-section">
-        <Text size="4" weight="bold" style={{ display: 'block', marginBottom: '16px' }}>
-          רשימת לקוחות
-        </Text>
+        <Flex justify="between" align="center" mb="3">
+          <Text size="4" weight="bold">רשימת לקוחות</Text>
+          <Flex gap="2" align="center">
+            <button
+              className={`filter-toggle-btn${showFilters ? ' filter-toggle-btn--active' : ''}`}
+              onClick={() => setShowFilters((v) => !v)}
+            >
+              סינון{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+            </button>
+            {activeFilterCount > 0 && (
+              <button className="filter-reset-btn" onClick={resetFilters}>נקה הכל</button>
+            )}
+          </Flex>
+        </Flex>
+
+        {showFilters && (
+          <div className="filter-panel">
+            <div className="filter-group filter-group--wide">
+              <span className="filter-label">חיפוש לפי שם</span>
+              <input
+                type="text"
+                placeholder="שם לקוח…"
+                value={filters.search}
+                onChange={(e) => setFilter('search', e.target.value)}
+                className="filter-number-input"
+                style={{ width: '100%' }}
+              />
+            </div>
+            <div className="filter-group">
+              <span className="filter-label">הכנסות מינ׳ (₪)</span>
+              <input
+                type="number"
+                min="0"
+                placeholder="0"
+                value={filters.minRevenue}
+                onChange={(e) => setFilter('minRevenue', e.target.value)}
+                className="filter-number-input"
+              />
+            </div>
+          </div>
+        )}
+
         <div className="table-wrapper">
           <Table.Root variant="surface">
             <Table.Header>
@@ -85,7 +160,7 @@ export default function CustomersView({
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {customersRecords.length === 0 && (
+              {filteredCustomers.length === 0 && (
                 <Table.Row>
                   <Table.Cell colSpan={3}>
                     <Text color="gray" align="center" style={{ display: 'block', padding: '24px' }}>
@@ -94,16 +169,14 @@ export default function CustomersView({
                   </Table.Cell>
                 </Table.Row>
               )}
-              {customersRecords.map((record) => {
+              {filteredCustomers.map((record) => {
                 const leadLinks  = customersFields.lead  ? record.getCellValue(customersFields.lead)  : null;
                 const salesLinks = customersFields.sales ? record.getCellValue(customersFields.sales) : null;
-                const totalRaw   = customersFields.total ? record.getCellValue(customersFields.total) : null;
+                const totalRaw   = revenueByCustomer.get(record.id);
 
                 const name       = leadLinks?.[0]?.name ?? '—';
                 const salesCount = Array.isArray(salesLinks) ? salesLinks.length : 0;
-                const totalStr   = totalRaw != null
-                  ? `₪${Number(totalRaw).toLocaleString('he-IL')}`
-                  : '—';
+                const totalStr   = totalRaw ? `₪${totalRaw.toLocaleString('he-IL')}` : '—';
 
                 return (
                   <Table.Row key={record.id}>

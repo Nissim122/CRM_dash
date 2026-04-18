@@ -156,6 +156,152 @@
   opacity: 1;
 }
 
+/* Filter Panel */
+.filter-toggle-btn {
+  background: var(--gray-3);
+  border: 1px solid var(--gray-6);
+  color: var(--gray-11);
+  border-radius: var(--radius-2);
+  padding: 5px 14px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 500;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+.filter-toggle-btn:hover {
+  border-color: var(--indigo-8);
+  color: var(--indigo-11);
+}
+.filter-toggle-btn:focus-visible {
+  outline: 2px solid var(--indigo-8);
+  outline-offset: 2px;
+}
+.filter-toggle-btn--active {
+  background: var(--indigo-a3);
+  border-color: var(--indigo-8);
+  color: var(--indigo-11);
+}
+
+.filter-reset-btn {
+  background: none;
+  border: none;
+  color: var(--red-10);
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-1);
+}
+.filter-reset-btn:hover {
+  color: var(--red-11);
+  background: var(--red-a3);
+}
+.filter-reset-btn:focus-visible {
+  outline: 2px solid var(--red-8);
+  outline-offset: 2px;
+}
+
+.filter-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  background: var(--gray-2);
+  border: 1px solid var(--gray-5);
+  border-radius: var(--radius-2);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 140px;
+}
+.filter-group--wide {
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+.filter-group--row {
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--gray-10);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.filter-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filter-chip {
+  background: var(--gray-3);
+  border: 1px solid var(--gray-6);
+  color: var(--gray-11);
+  border-radius: 999px;
+  padding: 3px 11px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: color 0.1s, background 0.1s, border-color 0.1s;
+}
+.filter-chip:hover {
+  border-color: var(--indigo-7);
+  color: var(--indigo-11);
+}
+.filter-chip:focus-visible {
+  outline: 2px solid var(--indigo-8);
+  outline-offset: 2px;
+}
+.filter-chip--active {
+  background: var(--indigo-a4);
+  border-color: var(--indigo-8);
+  color: var(--indigo-11);
+  font-weight: 600;
+}
+
+.filter-number-input {
+  width: 72px;
+  padding: 4px 8px;
+  background: var(--gray-3);
+  border: 1px solid var(--gray-6);
+  border-radius: var(--radius-2);
+  color: var(--gray-12);
+  font-size: 0.82rem;
+}
+.filter-number-input:focus {
+  outline: none;
+  border-color: var(--indigo-8);
+}
+
+.filter-inline-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.82rem;
+  color: var(--gray-11);
+  cursor: pointer;
+}
+.filter-checkbox-label input[type="checkbox"] {
+  accent-color: var(--indigo-9);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
 /* Error */
 .error-state {
   display: flex;
