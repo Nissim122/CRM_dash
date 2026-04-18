@@ -11,7 +11,7 @@ function formatAvg(ms) {
 }
 
 const CLOSED_STATUS  = 'נרשם כלקוח';
-const ACTIVE_STATUSES = ['נוצר קשר', 'לא נוצר קשר', 'שיתוף פעולה'];
+const ACTIVE_STATUSES = ['נוצר קשר', 'לא נוצר קשר'];
 
 const CARD_META = {
   leads:       { color: '#6366f1', icon: '📥' },
