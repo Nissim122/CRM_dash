@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Table, Badge, Button, Text, Select, TextArea, Flex, Callout, TextField,
 } from '@radix-ui/themes';
@@ -6,6 +6,15 @@ import { globalConfig } from '@airtable/blocks';
 import { useGlobalConfig } from '@airtable/blocks/ui';
 
 const PRESETS_KEY = 'filterPresets_leads';
+const RESPONSE_TIMES_KEY = 'leadResponseTimestamps';
+
+function formatElapsed(ms) {
+  if (ms < 3_600_000) return `${Math.floor(ms / 60_000)} דק׳`;
+  if (ms < 86_400_000) return `${Math.floor(ms / 3_600_000)} שע׳`;
+  const d = Math.floor(ms / 86_400_000);
+  const h = Math.floor((ms % 86_400_000) / 3_600_000);
+  return h > 0 ? `${d}ד׳ ${h}ש׳` : `${d} ימים`;
+}
 
 const STATUSES = ['נוצר קשר', 'לא נוצר קשר', 'נרשם כלקוח', 'שיתוף פעולה', 'לא רלוונטי'];
 const ACTIVE_STATUSES = new Set(['נוצר קשר', 'לא נוצר קשר', 'שיתוף פעולה']);
@@ -76,9 +85,16 @@ export default function OperationalTable({ records, fields, table }) {
   const [filters,        setFilters]        = useState(EMPTY_FILTERS);
   const [showSaveInput,  setShowSaveInput]  = useState(false);
   const [presetName,     setPresetName]     = useState('');
+  const [tick,           setTick]           = useState(0);
 
   const gConfig = useGlobalConfig();
-  const presets  = gConfig.get(PRESETS_KEY) ?? [];
+  const presets       = gConfig.get(PRESETS_KEY) ?? [];
+  const responseTimes = gConfig.get(RESPONSE_TIMES_KEY) ?? {};
+
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   async function savePreset() {
     const name = presetName.trim();
@@ -188,6 +204,20 @@ export default function OperationalTable({ records, fields, table }) {
     if (!field) return;
     try {
       setSaveError(null);
+      if (field?.id === fields.status?.id) {
+        const oldStatus = fields.status ? record.getCellValue(fields.status)?.name : null;
+        const newStatus = value?.name;
+        if (oldStatus === 'לא נוצר קשר' && newStatus && newStatus !== 'לא נוצר קשר') {
+          const createdRaw = fields.createdTime
+            ? record.getCellValue(fields.createdTime)
+            : record.createdTime;
+          const existing = globalConfig.get(RESPONSE_TIMES_KEY) ?? {};
+          await globalConfig.setAsync(RESPONSE_TIMES_KEY, {
+            ...existing,
+            [record.id]: { createdAt: new Date(createdRaw).getTime(), changedAt: Date.now() },
+          });
+        }
+      }
       await table.updateRecordAsync(record, { [field.id]: value });
     } catch {
       setSaveError('שגיאה בשמירה — בדוק הרשאות');
@@ -391,6 +421,7 @@ export default function OperationalTable({ records, fields, table }) {
             <Table.Row>
               <Table.ColumnHeaderCell>שם</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell>סטטוס</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>זמן חזרה</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell>סוג שירות</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell>מקור</Table.ColumnHeaderCell>
               <Table.ColumnHeaderCell>שווי עסקה</Table.ColumnHeaderCell>
@@ -402,7 +433,7 @@ export default function OperationalTable({ records, fields, table }) {
           <Table.Body>
             {filtered.length === 0 && (
               <Table.Row>
-                <Table.Cell colSpan={8}>
+                <Table.Cell colSpan={9}>
                   <Text color="gray" align="center" style={{ display: 'block', padding: '24px' }}>
                     אין לידים להצגה
                   </Text>
@@ -428,6 +459,15 @@ export default function OperationalTable({ records, fields, table }) {
                 ? `₪${Number(dealVal).toLocaleString('he-IL')}`
                 : '—';
 
+              const rt = responseTimes[record.id];
+              let waitDisplay = '—';
+              if (rt) {
+                waitDisplay = formatElapsed(rt.changedAt - rt.createdAt) + ' ✓';
+              } else if (status === 'לא נוצר קשר') {
+                const cr = fields.createdTime ? record.getCellValue(fields.createdTime) : record.createdTime;
+                if (cr) waitDisplay = formatElapsed(Date.now() - new Date(cr).getTime());
+              }
+
               return (
                 <Table.Row key={record.id} style={isNew ? { background: 'var(--indigo-a3)' } : {}}>
 
@@ -448,6 +488,17 @@ export default function OperationalTable({ records, fields, table }) {
                       currentValue={status}
                       colorMap={STATUS_COLOR}
                     />
+                  </Table.Cell>
+
+                  {/* זמן חזרה */}
+                  <Table.Cell>
+                    <Text
+                      size="1"
+                      color={rt ? 'green' : (status === 'לא נוצר קשר' ? 'red' : 'gray')}
+                      style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}
+                    >
+                      {waitDisplay}
+                    </Text>
                   </Table.Cell>
 
                   {/* סוג שירות */}

@@ -1,14 +1,24 @@
 import React, { useMemo } from 'react';
 import { Card, Text, Heading, Flex } from '@radix-ui/themes';
+import { useGlobalConfig } from '@airtable/blocks/ui';
+
+const RESPONSE_TIMES_KEY = 'leadResponseTimestamps';
+
+function formatAvg(ms) {
+  if (ms < 3_600_000) return `${Math.round(ms / 60_000)} דק׳`;
+  if (ms < 86_400_000) return `${Math.round(ms / 3_600_000)} שע׳`;
+  return `${(ms / 86_400_000).toFixed(1)} ימים`;
+}
 
 const CLOSED_STATUS  = 'נרשם כלקוח';
 const ACTIVE_STATUSES = ['נוצר קשר', 'לא נוצר קשר', 'שיתוף פעולה'];
 
 const CARD_META = {
-  leads:      { color: '#6366f1', icon: '📥' },
-  closed:     { color: '#10b981', icon: '✅' },
-  conversion: { color: '#f59e0b', icon: '📊' },
-  active:     { color: '#ef4444', icon: '🔔' },
+  leads:       { color: '#6366f1', icon: '📥' },
+  closed:      { color: '#10b981', icon: '✅' },
+  conversion:  { color: '#f59e0b', icon: '📊' },
+  active:      { color: '#ef4444', icon: '🔔' },
+  avgResponse: { color: '#f43f5e', icon: '⏱' },
 };
 
 const PERIOD_LABEL = { week: 'השבוע', month: 'החודש', year: 'השנה' };
@@ -26,6 +36,16 @@ function getPeriodStart(period) {
 }
 
 export default function KpiBar({ records, fields, period = 'month' }) {
+  const gConfig = useGlobalConfig();
+  const responseTimes = gConfig.get(RESPONSE_TIMES_KEY) ?? {};
+
+  const avgResponseMs = useMemo(() => {
+    const entries = Object.values(responseTimes);
+    if (!entries.length) return null;
+    const total = entries.reduce((sum, e) => sum + (e.changedAt - e.createdAt), 0);
+    return total / entries.length;
+  }, [responseTimes]);
+
   const stats = useMemo(() => {
     const startDate = getPeriodStart(period);
     let newInPeriod = 0;
@@ -56,10 +76,11 @@ export default function KpiBar({ records, fields, period = 'month' }) {
   const p = PERIOD_LABEL[period];
 
   const cards = [
-    { id: 'leads',      label: `לידים חדשים ${p}`,   value: stats.newInPeriod },
-    { id: 'closed',     label: `נסגרו כלקוחות ${p}`, value: stats.closedInPeriod },
-    { id: 'conversion', label: 'אחוז המרה',           value: `${stats.conversion}%` },
-    { id: 'active',     label: 'לידים פעילים',        value: stats.activeLeads },
+    { id: 'leads',       label: `לידים חדשים ${p}`,   value: stats.newInPeriod },
+    { id: 'closed',      label: `נסגרו כלקוחות ${p}`, value: stats.closedInPeriod },
+    { id: 'conversion',  label: 'אחוז המרה',           value: `${stats.conversion}%` },
+    { id: 'active',      label: 'לידים פעילים',        value: stats.activeLeads },
+    { id: 'avgResponse', label: 'ממוצע זמן חזרה',      value: avgResponseMs != null ? formatAvg(avgResponseMs) : '—' },
   ];
 
   return (
