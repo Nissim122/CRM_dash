@@ -32,7 +32,7 @@ const CARD_META = {
 
 const PERIOD_LABEL = { week: 'השבוע', month: 'החודש', year: 'השנה', all: 'תמיד' };
 
-const EMPTY_FILTERS = { search: '', minRevenue: '' };
+const EMPTY_FILTERS = { search: '', minRevenue: '', projectStatus: '', leadSource: '' };
 
 export default function CustomersView({
   customersRecords, customersFields, customersTable,
@@ -40,6 +40,7 @@ export default function CustomersView({
   leadsRecords, leadsFields,
   period,
 }) {
+  const [salesModal,     setSalesModal]     = useState(null);
   const [showFilters,    setShowFilters]    = useState(false);
   const [filters,        setFilters]        = useState(EMPTY_FILTERS);
   const [showSaveInput,  setShowSaveInput]  = useState(false);
@@ -77,10 +78,48 @@ export default function CustomersView({
     return () => document.removeEventListener('mousedown', handleDocMouseDown);
   }, [expandedRow, showSaveConfirm]);
 
+  useEffect(() => {
+    if (!salesModal) return;
+    function handleKey(e) { if (e.key === 'Escape') setSalesModal(null); }
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [salesModal]);
+
+  function openSalesModal(record) {
+    const leadLinks  = customersFields.lead  ? record.getCellValue(customersFields.lead)  : null;
+    const salesLinks = customersFields.sales ? record.getCellValue(customersFields.sales) : null;
+    const customerName = leadLinks?.[0]?.name ?? '—';
+    const saleIds = new Set((salesLinks ?? []).map((s) => s.id));
+
+    const salesData = salesRecords
+      .filter((s) => saleIds.has(s.id))
+      .map((s) => {
+        const dateRaw = salesFields.date ? s.getCellValue(salesFields.date) : null;
+        const dateStr = dateRaw
+          ? new Date(dateRaw).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' })
+          : '—';
+
+        const priceArr = salesFields.price ? s.getCellValue(salesFields.price) : null;
+        let total = 0;
+        if (Array.isArray(priceArr)) {
+          for (const v of priceArr) total += typeof v === 'number' ? v : (v?.value ?? 0);
+        }
+        const priceStr = total ? `₪${total.toLocaleString('he-IL')}` : '—';
+
+        const productsRaw = salesFields.products ? s.getCellValue(salesFields.products) : null;
+        const productsStr = Array.isArray(productsRaw) ? productsRaw.map((p) => p.name).join(', ') : '—';
+
+        return { id: s.id, date: dateStr, products: productsStr, price: priceStr };
+      });
+
+    setSalesModal({ customerName, salesData });
+  }
+
   const gConfig = useGlobalConfig();
   const presets  = gConfig.get(PRESETS_KEY) ?? [];
 
-  const activeFilterCount = (filters.search ? 1 : 0) + (filters.minRevenue ? 1 : 0);
+  const activeFilterCount = (filters.search ? 1 : 0) + (filters.minRevenue ? 1 : 0)
+    + (filters.projectStatus ? 1 : 0) + (filters.leadSource ? 1 : 0);
 
   function setFilter(key, val) { setActivePresetId(null); setFilters((f) => ({ ...f, [key]: val })); }
   function resetFilters()      { setActivePresetId(null); setFilters(EMPTY_FILTERS); }
@@ -107,6 +146,11 @@ export default function CustomersView({
   const projectStatusChoices = useMemo(
     () => getSelectChoices(customersFields.projectStatus),
     [customersFields.projectStatus]
+  );
+
+  const leadSourceChoices = useMemo(
+    () => getSelectChoices(leadsFields?.leadSource),
+    [leadsFields?.leadSource]
   );
 
   function getDraftInitial(record) {
@@ -256,8 +300,26 @@ export default function CustomersView({
       const min = Number(filters.minRevenue);
       base = base.filter((r) => (revenueByCustomer.get(r.id) ?? 0) >= min);
     }
+    if (filters.projectStatus) {
+      base = base.filter((r) => {
+        const status = customersFields.projectStatus
+          ? r.getCellValue(customersFields.projectStatus)?.name ?? ''
+          : '';
+        return status === filters.projectStatus;
+      });
+    }
+    if (filters.leadSource) {
+      base = base.filter((r) => {
+        const leadLinks = customersFields.lead ? r.getCellValue(customersFields.lead) : null;
+        const leadRec = leadLinks?.[0] ? leadsById.get(leadLinks[0].id) : null;
+        const source = leadRec && leadsFields?.leadSource
+          ? leadRec.getCellValue(leadsFields.leadSource)?.name ?? ''
+          : '';
+        return source === filters.leadSource;
+      });
+    }
     return base;
-  }, [customersRecords, customersFields, filters, revenueByCustomer]);
+  }, [customersRecords, customersFields, filters, revenueByCustomer, leadsById, leadsFields]);
 
   const colCount = 5
     + (customersFields.projectStatus ? 1 : 0)
@@ -334,6 +396,32 @@ export default function CustomersView({
                 className="filter-number-input"
               />
             </div>
+            {projectStatusChoices.length > 0 && (
+              <div className="filter-group">
+                <span className="filter-label">סטטוס פרוייקט</span>
+                <select
+                  className="filter-number-input"
+                  value={filters.projectStatus}
+                  onChange={(e) => setFilter('projectStatus', e.target.value)}
+                >
+                  <option value="">הכל</option>
+                  {projectStatusChoices.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            )}
+            {leadSourceChoices.length > 0 && (
+              <div className="filter-group">
+                <span className="filter-label">מקור ליד</span>
+                <select
+                  className="filter-number-input"
+                  value={filters.leadSource}
+                  onChange={(e) => setFilter('leadSource', e.target.value)}
+                >
+                  <option value="">הכל</option>
+                  {leadSourceChoices.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+            )}
 
             <div className="filter-save-row">
               {showSaveInput ? (
@@ -438,7 +526,14 @@ export default function CustomersView({
                   >
                     {/* מכירות */}
                     <Table.Cell>
-                      <Badge color="indigo" variant="soft">{salesCount}</Badge>
+                      <button
+                        className="interactions-count-btn"
+                        onClick={() => openSalesModal(record)}
+                        disabled={salesCount === 0}
+                        style={salesCount === 0 ? { opacity: 0.4, cursor: 'default' } : {}}
+                      >
+                        {salesCount}
+                      </button>
                     </Table.Cell>
 
                     {/* סה"כ הכנסות */}
@@ -579,6 +674,48 @@ export default function CustomersView({
             </div>
           ))}
         </aside>
+      )}
+
+      {/* Sales modal */}
+      {salesModal && (
+        <div className="interactions-overlay" onClick={() => setSalesModal(null)}>
+          <div
+            className="interactions-modal"
+            style={{ width: 520, maxHeight: 520 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="interactions-modal__header">
+              <button className="interactions-modal__close" onClick={() => setSalesModal(null)}>×</button>
+              <span className="interactions-modal__title">מכירות — {salesModal.customerName}</span>
+            </div>
+            <div className="interactions-modal__body">
+              {salesModal.salesData.length === 0 ? (
+                <div style={{ padding: 24, textAlign: 'center', color: 'var(--gray-9)', fontSize: '0.875rem' }}>
+                  אין מכירות לצפייה
+                </div>
+              ) : (
+                <table className="sales-modal-table">
+                  <thead>
+                    <tr>
+                      <th>תאריך</th>
+                      <th>מוצרים</th>
+                      <th>מחיר</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {salesModal.salesData.map((sale) => (
+                      <tr key={sale.id}>
+                        <td style={{ whiteSpace: 'nowrap' }}>{sale.date}</td>
+                        <td>{sale.products}</td>
+                        <td style={{ whiteSpace: 'nowrap', color: 'var(--amber-11)', fontWeight: 700 }}>{sale.price}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Save confirmation dialog */}

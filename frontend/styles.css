@@ -763,6 +763,30 @@ th, td { text-align: center !important; }
   font-size: 0.78rem;
   font-weight: 700;
 }
+
+/* Sales modal table */
+.sales-modal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  direction: rtl;
+}
+.sales-modal-table th {
+  padding: 10px 16px;
+  text-align: right;
+  color: var(--gray-10);
+  font-weight: 600;
+  font-size: 0.78rem;
+  border-bottom: 1px solid var(--gray-5);
+  background: var(--gray-2);
+}
+.sales-modal-table td {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--gray-4);
+  color: var(--gray-12);
+}
+.sales-modal-table tbody tr:last-child td { border-bottom: none; }
+.sales-modal-table tbody tr:hover { background: var(--gray-3); }
 .interaction-item__arrow {
   color: var(--gray-8);
   font-size: 1rem;

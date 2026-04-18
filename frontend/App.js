@@ -67,8 +67,9 @@ export default function App() {
   const salesFields = useMemo(() => {
     if (!salesTable) return {};
     return {
-      price: salesTable.getFieldByNameIfExists('מחיר (from מחיר)'),
-      date:  salesTable.getFieldByNameIfExists('תאריך'),
+      price:    salesTable.getFieldByNameIfExists('מחיר (from מחיר)'),
+      date:     salesTable.getFieldByNameIfExists('תאריך'),
+      products: salesTable.getFieldByNameIfExists('מוצרים'),
     };
   }, [salesTable]);
 
