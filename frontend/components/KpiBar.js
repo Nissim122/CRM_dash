@@ -5,8 +5,8 @@ import { useGlobalConfig } from '@airtable/blocks/ui';
 const RESPONSE_TIMES_KEY = 'leadResponseTimestamps';
 
 function formatAvg(ms) {
-  if (ms < 3_600_000) return `${Math.round(ms / 60_000)} דק׳`;
-  if (ms < 86_400_000) return `${Math.round(ms / 3_600_000)} שע׳`;
+  if (ms < 3_600_000) return `${Math.round(ms / 60_000)} דקות`;
+  if (ms < 86_400_000) return `${Math.round(ms / 3_600_000)} שעות`;
   return `${(ms / 86_400_000).toFixed(1)} ימים`;
 }
 

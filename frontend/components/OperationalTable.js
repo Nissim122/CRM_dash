@@ -9,11 +9,11 @@ const PRESETS_KEY = 'filterPresets_leads';
 const RESPONSE_TIMES_KEY = 'leadResponseTimestamps';
 
 function formatElapsed(ms) {
-  if (ms < 3_600_000) return `${Math.floor(ms / 60_000)} דק׳`;
-  if (ms < 86_400_000) return `${Math.floor(ms / 3_600_000)} שע׳`;
+  if (ms < 3_600_000) return `${Math.floor(ms / 60_000)} דקות`;
+  if (ms < 86_400_000) return `${Math.floor(ms / 3_600_000)} שעות`;
   const d = Math.floor(ms / 86_400_000);
   const h = Math.floor((ms % 86_400_000) / 3_600_000);
-  return h > 0 ? `${d}ד׳ ${h}ש׳` : `${d} ימים`;
+  return h > 0 ? `${d} ימים ${h} שעות` : `${d} ימים`;
 }
 
 const STATUSES = ['נוצר קשר', 'לא נוצר קשר', 'נרשם כלקוח', 'שיתוף פעולה', 'לא רלוונטי'];
