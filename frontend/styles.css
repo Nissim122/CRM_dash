@@ -467,8 +467,8 @@
   border-color: var(--indigo-8);
 }
 
-/* Table column headers — centered */
-th { text-align: center !important; }
+/* Table cells — centered */
+th, td { text-align: center !important; }
 
 /* Error */
 .error-state {
