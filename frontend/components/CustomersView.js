@@ -38,6 +38,7 @@ export default function CustomersView({
   customersRecords, customersFields, customersTable,
   salesRecords, salesFields,
   leadsRecords, leadsFields,
+  paymentsRecords, paymentsFields,
   period,
 }) {
   const [salesModal,     setSalesModal]     = useState(null);
@@ -59,6 +60,24 @@ export default function CustomersView({
   const draftRef         = useRef(draftValues);
   const origRef          = useRef(origValues);
   const expandedRowRef   = useRef(expandedRow);
+
+  const salesById = useMemo(
+    () => new Map((salesRecords ?? []).map((r) => [r.id, r])),
+    [salesRecords]
+  );
+
+  const paymentsBySaleId = useMemo(() => {
+    const map = new Map();
+    if (!paymentsFields?.projectLink) return map;
+    for (const p of paymentsRecords) {
+      const links = p.getCellValue(paymentsFields.projectLink) || [];
+      for (const link of links) {
+        if (!map.has(link.id)) map.set(link.id, []);
+        map.get(link.id).push(p);
+      }
+    }
+    return map;
+  }, [paymentsRecords, paymentsFields]);
 
   useEffect(() => { draftRef.current       = draftValues; }, [draftValues]);
   useEffect(() => { origRef.current        = origValues;  }, [origValues]);
@@ -99,17 +118,33 @@ export default function CustomersView({
           ? new Date(dateRaw).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' })
           : '—';
 
-        const priceArr = salesFields.price ? s.getCellValue(salesFields.price) : null;
-        let total = 0;
-        if (Array.isArray(priceArr)) {
-          for (const v of priceArr) total += typeof v === 'number' ? v : (v?.value ?? 0);
-        }
-        const priceStr = total ? `₪${total.toLocaleString('he-IL')}` : '—';
-
         const productsRaw = salesFields.products ? s.getCellValue(salesFields.products) : null;
         const productsStr = Array.isArray(productsRaw) ? productsRaw.map((p) => p.name).join(', ') : '—';
 
-        return { id: s.id, date: dateStr, products: productsStr, price: priceStr };
+        const totalDeal = salesFields.totalDeal ? (Number(s.getCellValue(salesFields.totalDeal)) || 0) : 0;
+        const totalPaid = salesFields.totalPaid ? (Number(s.getCellValue(salesFields.totalPaid)) || 0) : 0;
+        const balance   = salesFields.balance   ? (Number(s.getCellValue(salesFields.balance))   || 0) : 0;
+        const fpRaw     = salesFields.fullyPaid  ?  s.getCellValue(salesFields.fullyPaid)              : null;
+        const fullyPaid = fpRaw === true || fpRaw === '✅' || fpRaw === 1;
+
+        const salePayments = (paymentsFields?.projectLink ? (paymentsBySaleId.get(s.id) ?? []) : [])
+          .sort((a, b) => {
+            const na = paymentsFields.paymentNumber ? Number(a.getCellValue(paymentsFields.paymentNumber) ?? 0) : 0;
+            const nb = paymentsFields.paymentNumber ? Number(b.getCellValue(paymentsFields.paymentNumber) ?? 0) : 0;
+            return na - nb;
+          })
+          .map((p) => {
+            const num    = paymentsFields.paymentNumber ? String(p.getCellValue(paymentsFields.paymentNumber) ?? '—') : '—';
+            const amt    = paymentsFields.amount   ? (p.getCellValue(paymentsFields.amount) ?? 0) : 0;
+            const st     = paymentsFields.status   ? p.getCellValue(paymentsFields.status)?.name ?? '—' : '—';
+            const due    = paymentsFields.dueDate  ? p.getCellValue(paymentsFields.dueDate) : null;
+            const dueStr = due
+              ? new Date(due).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' })
+              : '—';
+            return { num, amount: amt, status: st, dueDate: dueStr };
+          });
+
+        return { id: s.id, date: dateStr, products: productsStr, totalDeal, totalPaid, balance, fullyPaid, payments: salePayments };
       });
 
     setSalesModal({ customerName, salesData });
@@ -245,12 +280,14 @@ export default function CustomersView({
       const dateRaw = salesFields.date ? record.getCellValue(salesFields.date) : null;
       if (!dateRaw || new Date(dateRaw) < startDate) continue;
       salesInPeriod++;
-      const priceArr = salesFields.price ? record.getCellValue(salesFields.price) : null;
-      if (Array.isArray(priceArr)) {
-        for (const val of priceArr) {
-          revenueInPeriod += typeof val === 'number' ? val : (val?.value ?? 0);
-        }
-      }
+    }
+
+    for (const p of (paymentsRecords ?? [])) {
+      const st = paymentsFields?.status ? p.getCellValue(paymentsFields.status) : null;
+      if (!st || st.name !== 'שולם בפועל') continue;
+      const dateRaw = paymentsFields?.dueDate ? p.getCellValue(paymentsFields.dueDate) : null;
+      if (!dateRaw || new Date(dateRaw) < startDate) continue;
+      revenueInPeriod += paymentsFields?.amount ? (p.getCellValue(paymentsFields.amount) ?? 0) : 0;
     }
 
     const leadsMap = new Map((leadsRecords ?? []).map((r) => [r.id, r]));
@@ -267,7 +304,7 @@ export default function CustomersView({
     }
 
     return { total: customersRecords.length, customersInPeriod, revenueInPeriod, salesInPeriod };
-  }, [customersRecords, customersFields, salesRecords, salesFields, leadsRecords, leadsFields, period]);
+  }, [customersRecords, customersFields, salesRecords, salesFields, paymentsRecords, paymentsFields, leadsRecords, leadsFields, period]);
 
   const periodLabel = PERIOD_LABEL[period];
 
@@ -280,11 +317,16 @@ export default function CustomersView({
   const revenueByCustomer = useMemo(() => {
     const map = new Map();
     for (const record of customersRecords) {
-      const totalRaw = customersFields.total ? record.getCellValue(customersFields.total) : null;
-      map.set(record.id, totalRaw != null ? Number(totalRaw) : 0);
+      const salesLinks = customersFields.sales ? record.getCellValue(customersFields.sales) : null;
+      const total = (salesLinks ?? []).reduce((sum, link) => {
+        const sale = salesById.get(link.id);
+        const v = sale && salesFields.totalPaid ? sale.getCellValue(salesFields.totalPaid) : 0;
+        return sum + (Number(v) || 0);
+      }, 0);
+      map.set(record.id, total);
     }
     return map;
-  }, [customersRecords, customersFields]);
+  }, [customersRecords, customersFields, salesById, salesFields]);
 
   const filteredCustomers = useMemo(() => {
     let base = customersRecords;
@@ -321,7 +363,7 @@ export default function CustomersView({
     return base;
   }, [customersRecords, customersFields, filters, revenueByCustomer, leadsById, leadsFields]);
 
-  const colCount = 5
+  const colCount = 7
     + (customersFields.projectStatus ? 1 : 0)
     + (customersFields.notes         ? 1 : 0)
     + (customersFields.contract      ? 1 : 0)
@@ -351,7 +393,7 @@ export default function CustomersView({
       </div>
 
       <div className="analytics-row">
-        <RevenueBarChart salesRecords={salesRecords} salesFields={salesFields} period={period} />
+        <RevenueBarChart salesRecords={salesRecords} salesFields={salesFields} paymentsRecords={paymentsRecords ?? []} paymentsFields={paymentsFields} period={period} />
       </div>
 
       <div className="ops-layout">
@@ -461,6 +503,8 @@ export default function CustomersView({
               <Table.Row>
                 <Table.ColumnHeaderCell>מכירות</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>סה"כ הכנסות</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>יתרה לגבייה</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>שולם?</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>תאריך יצירה</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>מקור ליד</Table.ColumnHeaderCell>
                 {customersFields.projectStatus && (
@@ -539,6 +583,38 @@ export default function CustomersView({
                     {/* סה"כ הכנסות */}
                     <Table.Cell>
                       <Text color="amber" weight="bold">{totalStr}</Text>
+                    </Table.Cell>
+
+                    {/* יתרה לגבייה */}
+                    <Table.Cell>
+                      {(() => {
+                        const links = Array.isArray(salesLinks) ? salesLinks : [];
+                        const bal = links.reduce((sum, link) => {
+                          const sale = salesById.get(link.id);
+                          const v = sale && salesFields.balance ? sale.getCellValue(salesFields.balance) : 0;
+                          return sum + (Number(v) || 0);
+                        }, 0);
+                        return bal > 0
+                          ? <Text style={{ color: 'var(--red-11)', fontWeight: 600 }}>₪{bal.toLocaleString('he-IL')}</Text>
+                          : <Text color="gray">—</Text>;
+                      })()}
+                    </Table.Cell>
+
+                    {/* שולם במלואו? */}
+                    <Table.Cell style={{ textAlign: 'center' }}>
+                      {(() => {
+                        const links = Array.isArray(salesLinks) ? salesLinks : [];
+                        if (links.length === 0) return <Text color="gray">—</Text>;
+                        const allPaid = links.every((link) => {
+                          const sale = salesById.get(link.id);
+                          if (!sale || !salesFields.fullyPaid) return false;
+                          const fp = sale.getCellValue(salesFields.fullyPaid);
+                          return fp === true || fp === '✅' || fp === 1;
+                        });
+                        return allPaid
+                          ? <Text>✅</Text>
+                          : <Text color="gray" size="1">–</Text>;
+                      })()}
                     </Table.Cell>
 
                     {/* תאריך יצירה */}
@@ -681,7 +757,7 @@ export default function CustomersView({
         <div className="interactions-overlay" onClick={() => setSalesModal(null)}>
           <div
             className="interactions-modal"
-            style={{ width: 520, maxHeight: 520 }}
+            style={{ width: 640, maxHeight: 600 }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="interactions-modal__header">
@@ -694,24 +770,68 @@ export default function CustomersView({
                   אין מכירות לצפייה
                 </div>
               ) : (
-                <table className="sales-modal-table">
-                  <thead>
-                    <tr>
-                      <th>תאריך</th>
-                      <th>מוצרים</th>
-                      <th>מחיר</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {salesModal.salesData.map((sale) => (
-                      <tr key={sale.id}>
-                        <td style={{ whiteSpace: 'nowrap' }}>{sale.date}</td>
-                        <td>{sale.products}</td>
-                        <td style={{ whiteSpace: 'nowrap', color: 'var(--amber-11)', fontWeight: 700 }}>{sale.price}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                salesModal.salesData.map((sale) => (
+                  <div key={sale.id} className="sale-block">
+                    <table className="sales-modal-table">
+                      <thead>
+                        <tr>
+                          <th>תאריך</th>
+                          <th>מוצרים</th>
+                          <th>סכום עסקה</th>
+                          <th>שולם</th>
+                          <th>יתרה</th>
+                          <th>סטטוס</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td style={{ whiteSpace: 'nowrap' }}>{sale.date}</td>
+                          <td>{sale.products}</td>
+                          <td style={{ whiteSpace: 'nowrap', color: 'var(--amber-11)', fontWeight: 600 }}>
+                            {sale.totalDeal ? `₪${sale.totalDeal.toLocaleString('he-IL')}` : '—'}
+                          </td>
+                          <td style={{ whiteSpace: 'nowrap', color: 'var(--green-11)' }}>
+                            {sale.totalPaid ? `₪${sale.totalPaid.toLocaleString('he-IL')}` : '—'}
+                          </td>
+                          <td style={{ whiteSpace: 'nowrap', color: sale.balance > 0 ? 'var(--red-11)' : 'var(--gray-9)', fontWeight: sale.balance > 0 ? 600 : 400 }}>
+                            {sale.balance > 0 ? `₪${sale.balance.toLocaleString('he-IL')}` : '—'}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>{sale.fullyPaid ? '✅' : '—'}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    {sale.payments.length > 0 ? (
+                      <table className="payments-sub-table">
+                        <thead>
+                          <tr>
+                            <th>מספר תשלום</th>
+                            <th>סכום</th>
+                            <th>סטטוס</th>
+                            <th>תאריך יעד</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sale.payments.map((p, i) => (
+                            <tr key={i}>
+                              <td>{p.num}</td>
+                              <td style={{ whiteSpace: 'nowrap' }}>₪{p.amount.toLocaleString('he-IL')}</td>
+                              <td>
+                                <span className={`payment-badge payment-badge--${p.status === 'שולם בפועל' ? 'paid' : 'pending'}`}>
+                                  {p.status}
+                                </span>
+                              </td>
+                              <td style={{ whiteSpace: 'nowrap', color: 'var(--gray-11)' }}>{p.dueDate}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div style={{ padding: '8px 12px', color: 'var(--gray-9)', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                        — אין פעימות תשלום —
+                      </div>
+                    )}
+                  </div>
+                ))
               )}
             </div>
           </div>

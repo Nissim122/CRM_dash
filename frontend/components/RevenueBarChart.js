@@ -43,56 +43,52 @@ function buildMonthBuckets(count) {
   return buckets;
 }
 
-function addRevenue(bucket, record, salesFields) {
-  const priceArr = salesFields.price ? record.getCellValue(salesFields.price) : null;
-  if (!Array.isArray(priceArr)) return;
-  for (const val of priceArr) {
-    bucket.הכנסות += typeof val === 'number' ? val : (val?.value ?? 0);
-  }
+function getPaidPayments(paymentsRecords, paymentsFields) {
+  if (!paymentsFields?.status || !paymentsFields?.dueDate || !paymentsFields?.amount) return [];
+  return paymentsRecords.filter((p) => {
+    const st = p.getCellValue(paymentsFields.status);
+    return st?.name === 'שולם בפועל';
+  });
 }
 
-export default function RevenueBarChart({ salesRecords, salesFields, period = 'year' }) {
+export default function RevenueBarChart({ salesRecords, salesFields, paymentsRecords = [], paymentsFields = {}, period = 'year' }) {
   const data = useMemo(() => {
     const today = new Date();
+    const paidPayments = getPaidPayments(paymentsRecords, paymentsFields);
 
-    if (period === 'week' || period === 'month') {
-      const dayCount = period === 'week' ? 7 : 30;
-      const buckets  = buildDayBuckets(dayCount);
-      const bucketMap = new Map(buckets.map((b) => [b.key, b]));
-
-      for (const record of salesRecords) {
-        const dateRaw = salesFields.date ? record.getCellValue(salesFields.date) : null;
+    function addPaymentRevenue(bucketMap, keyFn) {
+      for (const p of paidPayments) {
+        const dateRaw = paymentsFields.dueDate ? p.getCellValue(paymentsFields.dueDate) : null;
         if (!dateRaw) continue;
         const d = new Date(dateRaw);
-        const diffDays = Math.floor((today - d) / 86400000);
-        if (diffDays >= 0 && diffDays < dayCount) {
-          const key = `${d.getMonth() + 1}/${d.getDate()}`;
-          const bucket = bucketMap.get(key);
-          if (bucket) addRevenue(bucket, record, salesFields);
-        }
+        const key = keyFn(d);
+        const bucket = bucketMap.get(key);
+        if (bucket) bucket.הכנסות += paymentsFields.amount ? (p.getCellValue(paymentsFields.amount) ?? 0) : 0;
       }
+    }
+
+    if (period === 'week' || period === 'month') {
+      const dayCount  = period === 'week' ? 7 : 30;
+      const buckets   = buildDayBuckets(dayCount);
+      const bucketMap = new Map(buckets.map((b) => [b.key, b]));
+      addPaymentRevenue(bucketMap, (d) => {
+        const diffDays = Math.floor((today - d) / 86400000);
+        return (diffDays >= 0 && diffDays < dayCount) ? `${d.getMonth() + 1}/${d.getDate()}` : null;
+      });
       return buckets;
     }
 
     if (period === 'year') {
       const buckets   = buildMonthBuckets(12);
       const bucketMap = new Map(buckets.map((b) => [b.key, b]));
-
-      for (const record of salesRecords) {
-        const dateRaw = salesFields.date ? record.getCellValue(salesFields.date) : null;
-        if (!dateRaw) continue;
-        const d   = new Date(dateRaw);
-        const key = `${d.getFullYear()}-${d.getMonth()}`;
-        const bucket = bucketMap.get(key);
-        if (bucket) addRevenue(bucket, record, salesFields);
-      }
+      addPaymentRevenue(bucketMap, (d) => `${d.getFullYear()}-${d.getMonth()}`);
       return buckets;
     }
 
     // period === 'all'
     let earliest = null;
-    for (const record of salesRecords) {
-      const raw = salesFields.date ? record.getCellValue(salesFields.date) : null;
+    for (const p of paidPayments) {
+      const raw = paymentsFields.dueDate ? p.getCellValue(paymentsFields.dueDate) : null;
       if (!raw) continue;
       const d = new Date(raw);
       if (!earliest || d < earliest) earliest = d;
@@ -111,17 +107,9 @@ export default function RevenueBarChart({ salesRecords, salesFields, period = 'y
       cursor.setMonth(cursor.getMonth() + 1);
     }
     const bucketMap = new Map(buckets.map((b) => [b.key, b]));
-
-    for (const record of salesRecords) {
-      const dateRaw = salesFields.date ? record.getCellValue(salesFields.date) : null;
-      if (!dateRaw) continue;
-      const d   = new Date(dateRaw);
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
-      const bucket = bucketMap.get(key);
-      if (bucket) addRevenue(bucket, record, salesFields);
-    }
+    addPaymentRevenue(bucketMap, (d) => `${d.getFullYear()}-${d.getMonth()}`);
     return buckets;
-  }, [salesRecords, salesFields, period]);
+  }, [paymentsRecords, paymentsFields, period]);
 
   const xAxisInterval = period === 'week' ? 0
     : period === 'month' ? 4

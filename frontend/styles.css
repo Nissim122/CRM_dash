@@ -263,9 +263,19 @@
   width: 18px;
   height: 18px;
   border-radius: 4px;
-  border: 2px solid var(--border);
+  border: 2px solid var(--indigo-7);
   background: transparent;
   flex-shrink: 0;
+  padding: 0;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.msg-checkbox:hover:not(:disabled) {
+  border-color: var(--indigo-7);
+}
+.msg-checkbox:focus-visible {
+  outline: 2px solid var(--indigo-8);
+  outline-offset: 2px;
 }
 .msg-checkbox--checked {
   background: var(--indigo-9);
@@ -787,6 +797,58 @@ th, td { text-align: center !important; }
 }
 .sales-modal-table tbody tr:last-child td { border-bottom: none; }
 .sales-modal-table tbody tr:hover { background: var(--gray-3); }
+
+/* Sale block in modal */
+.sale-block {
+  border: 1px solid var(--gray-5);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.sale-block:last-child { margin-bottom: 0; }
+
+/* Payments sub-table */
+.payments-sub-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  direction: rtl;
+  border-top: 1px solid var(--gray-4);
+  background: var(--gray-2);
+}
+.payments-sub-table th {
+  padding: 7px 14px;
+  text-align: right;
+  color: var(--gray-9);
+  font-weight: 600;
+  font-size: 0.73rem;
+  border-bottom: 1px solid var(--gray-4);
+}
+.payments-sub-table td {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--gray-3);
+  color: var(--gray-11);
+}
+.payments-sub-table tbody tr:last-child td { border-bottom: none; }
+.payments-sub-table tbody tr:hover { background: var(--gray-3); }
+
+/* Payment status badge */
+.payment-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.73rem;
+  font-weight: 600;
+}
+.payment-badge--paid {
+  background: var(--green-3);
+  color: var(--green-11);
+}
+.payment-badge--pending {
+  background: var(--amber-3);
+  color: var(--amber-11);
+}
+
 .interaction-item__arrow {
   color: var(--gray-8);
   font-size: 1rem;

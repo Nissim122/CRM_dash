@@ -91,6 +91,7 @@ export default function OperationalTable({ records, fields, table, interactionsT
   const [tick,            setTick]            = useState(0);
   const [activePresetId,  setActivePresetId]  = useState(null);
   const [uploadingIds,    setUploadingIds]    = useState(new Set());
+  const [togglingMsgIds,  setTogglingMsgIds]  = useState(new Set());
 
   const expandedPanelRef = useRef(null);
   const pencilBtnRefs    = useRef({});
@@ -355,6 +356,21 @@ export default function OperationalTable({ records, fields, table, interactionsT
       setSaveError('שגיאה בשמירה — בדוק הרשאות');
     } finally {
       setNoAnswerSaving(false);
+    }
+  }
+
+  async function toggleMessageSent(e, record) {
+    e.stopPropagation();
+    if (!fields.messageSent || togglingMsgIds.has(record.id)) return;
+    const current = record.getCellValue(fields.messageSent);
+    const isSent = current === true || current === 'כן' || current === 'נשלחה';
+    setTogglingMsgIds((prev) => new Set(prev).add(record.id));
+    try {
+      await table.updateRecordAsync(record, { [fields.messageSent.id]: !isSent });
+    } catch {
+      setSaveError('שגיאה בשמירה — בדוק הרשאות');
+    } finally {
+      setTogglingMsgIds((prev) => { const s = new Set(prev); s.delete(record.id); return s; });
     }
   }
 
@@ -766,14 +782,22 @@ export default function OperationalTable({ records, fields, table, interactionsT
                     <Table.Cell>
                       {(() => {
                         const sent = messageSent === true || messageSent === 'כן' || messageSent === 'נשלחה';
+                        const toggling = togglingMsgIds.has(record.id);
                         return (
-                          <span className={`msg-checkbox${sent ? ' msg-checkbox--checked' : ''}`} aria-label={sent ? 'נשלחה' : 'לא נשלחה'}>
+                          <button
+                            className={`msg-checkbox${sent ? ' msg-checkbox--checked' : ''}`}
+                            aria-label={sent ? 'נשלחה — לחץ לביטול' : 'לא נשלחה — לחץ לסימון'}
+                            title={sent ? 'נשלחה — לחץ לביטול' : 'לא נשלחה — לחץ לסימון'}
+                            disabled={toggling || !fields.messageSent}
+                            onClick={(e) => toggleMessageSent(e, record)}
+                            style={{ cursor: toggling ? 'default' : 'pointer', opacity: toggling ? 0.6 : 1 }}
+                          >
                             {sent && (
                               <svg viewBox="0 0 12 10" width="10" height="10" fill="none">
                                 <polyline points="1,5 4.5,8.5 11,1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                               </svg>
                             )}
-                          </span>
+                          </button>
                         );
                       })()}
                     </Table.Cell>

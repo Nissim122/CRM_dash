@@ -36,11 +36,13 @@ export default function App() {
   const salesTable     = base.getTableByNameIfExists('מכירות');
   const meetingsTable  = base.getTableByNameIfExists('פגישות בזום');
   const customersTable = base.getTableByNameIfExists('לקוחות');
+  const paymentsTable  = base.getTableByNameIfExists('תשלומים');
 
   const records          = useRecords(leadsTable);
   const salesRecords     = useRecords(salesTable);
   const meetingsRecords  = useRecords(meetingsTable);
   const customersRecords = useRecords(customersTable);
+  const paymentsRecords  = useRecords(paymentsTable ?? null);
 
   const interactionsTable   = base.getTableByNameIfExists('אינטרקציות');
   const interactionsRecords = useRecords(interactionsTable);
@@ -75,12 +77,29 @@ export default function App() {
 
   const salesFields = useMemo(() => {
     if (!salesTable) return {};
+    const f = (name) => salesTable.getFieldByNameIfExists(name);
     return {
-      price:    salesTable.getFieldByNameIfExists('מחיר (from מחיר)'),
-      date:     salesTable.getFieldByNameIfExists('תאריך'),
-      products: salesTable.getFieldByNameIfExists('מוצרים'),
+      price:      f('מחיר (from מחיר)'),
+      date:       f('תאריך'),
+      products:   f('מוצרים'),
+      totalDeal:  f('סכום עסקה כולל'),
+      totalPaid:  f('סך הכל שולם') ?? f('תשלום כולל') ?? f('סה"כ שולם'),
+      balance:    f('יתרה לגבייה') ?? f('יתרה לגביה'),
+      fullyPaid:  f('שולם במלואו?'),
     };
   }, [salesTable]);
+
+  const paymentsFields = useMemo(() => {
+    if (!paymentsTable) return {};
+    const f = (name) => paymentsTable.getFieldByNameIfExists(name);
+    return {
+      projectLink:   f('פרוייקט לקוח'),
+      paymentNumber: f('מספר תשלום'),
+      amount:        f('סכום תשלום'),
+      status:        f('סטטוס'),
+      dueDate:       f('תאריך יעד'),
+    };
+  }, [paymentsTable]);
 
   const meetingsFields = useMemo(() => {
     if (!meetingsTable) return {};
@@ -91,15 +110,21 @@ export default function App() {
 
   const customersFields = useMemo(() => {
     if (!customersTable) return {};
+    const f = (name) => customersTable.getFieldByNameIfExists(name);
     return {
-      lead:          customersTable.getFieldByNameIfExists('לקוח'),
-      sales:         customersTable.getFieldByNameIfExists('מכירות'),
-      total:         customersTable.getFieldByNameIfExists('סה"כ'),
-      projectStatus: customersTable.getFieldByNameIfExists('סטטוס פרוייקט'),
-      notes:         customersTable.getFieldByNameIfExists('הערות ללקוח'),
-      contract:      customersTable.getFieldByNameIfExists('חוזה'),
+      lead:          f('לקוח'),
+      sales:         f('מכירות') ?? f('מכירות שנעשו ללקוח') ?? f('מכירות שנעשו'),
+      total:         f('סה"כ') ?? f('סה"כ הכנסות') ?? f('סה"כ (rollup הכנסות)'),
+      projectStatus: f('סטטוס פרוייקט'),
+      notes:         f('הערות ללקוח'),
+      contract:      f('חוזה'),
     };
   }, [customersTable]);
+
+  useEffect(() => {
+    if (customersTable) console.log('[DEBUG] customers fields:', customersTable.fields.map((f) => f.name));
+    if (salesTable)     console.log('[DEBUG] sales fields:',     salesTable.fields.map((f) => f.name));
+  }, [customersTable, salesTable]);
 
   if (!leadsTable) {
     return (
@@ -173,6 +198,8 @@ export default function App() {
             salesFields={salesFields}
             leadsRecords={records}
             leadsFields={fields}
+            paymentsRecords={paymentsRecords ?? []}
+            paymentsFields={paymentsFields}
             period={period}
           />
         )}
