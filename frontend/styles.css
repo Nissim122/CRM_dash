@@ -862,3 +862,44 @@ th, td { text-align: center !important; }
   outline: 2px solid var(--indigo-8);
   outline-offset: 1px;
 }
+
+/* ZoomMeetingsView */
+.zoom-filter-row {
+  display: flex;
+  gap: 4px;
+  background: var(--gray-3);
+  border-radius: var(--radius-2);
+  padding: 3px;
+}
+.zoom-join-btn {
+  display: inline-block;
+  padding: 3px 12px;
+  background: var(--indigo-9);
+  color: #fff;
+  border-radius: var(--radius-2);
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.12s, opacity 0.12s;
+}
+.zoom-join-btn:hover {
+  background: var(--indigo-10);
+}
+.zoom-join-btn:focus-visible {
+  outline: 2px solid var(--indigo-8);
+  outline-offset: 2px;
+}
+.zoom-join-btn--sm {
+  padding: 2px 8px;
+  font-size: 0.55rem;
+}
+.zoom-join-btn--sq {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 28px;
+  padding: 0;
+  font-size: 0.6rem;
+  border-radius: var(--radius-2);
+}

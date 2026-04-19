@@ -9,6 +9,7 @@ import LeadFunnel from './components/LeadFunnel';
 import LeadSourceChart from './components/LeadSourceChart';
 import OperationalTable from './components/OperationalTable';
 import CustomersView from './components/CustomersView';
+import ZoomMeetingsView from './components/ZoomMeetingsView';
 import './styles.css';
 
 const PERIODS = [
@@ -21,6 +22,7 @@ const PERIODS = [
 const VIEWS = [
   { key: 'leads',     label: 'לידים' },
   { key: 'customers', label: 'לקוחות' },
+  { key: 'meetings',  label: 'פגישות זום' },
 ];
 
 export default function App() {
@@ -164,6 +166,15 @@ export default function App() {
             salesFields={salesFields}
             leadsRecords={records}
             leadsFields={fields}
+            period={period}
+          />
+        )}
+
+        {activeView === 'meetings' && (
+          <ZoomMeetingsView
+            meetingsRecords={meetingsRecords}
+            meetingsTable={meetingsTable}
+            leadsRecords={records}
             period={period}
           />
         )}
