@@ -123,17 +123,16 @@ function getPeriodRange(period) {
   return null;
 }
 
-function CloseRateChart({ periodFiltered, fields }) {
+function CloseRateChart({ meetingsRecords, fields }) {
   const { closed, total } = useMemo(() => {
-    if (!periodFiltered.length || !fields.dealClosed) return { closed: 0, total: 0 };
-    let total = periodFiltered.length;
+    if (!meetingsRecords?.length || !fields.dealClosed) return { closed: 0, total: 0 };
+    const total = meetingsRecords.length;
     let closed = 0;
-    for (const meeting of periodFiltered) {
-      const val = meeting.getCellValue(fields.dealClosed);
-      if (val === true || val === 1 || val?.name === 'כן' || val === 'כן') closed++;
+    for (const meeting of meetingsRecords) {
+      if (meeting.getCellValue(fields.dealClosed) === true) closed++;
     }
     return { closed, total };
-  }, [periodFiltered, fields]);
+  }, [meetingsRecords, fields]);
 
   const rate = total > 0 ? Math.round((closed / total) * 100) : 0;
   const color = rate >= 40 ? 'var(--green-9)' : rate >= 20 ? 'var(--amber-9)' : 'var(--red-9)';
@@ -294,7 +293,7 @@ export default function ZoomMeetingsView({ meetingsRecords, meetingsTable, leads
             </ResponsiveContainer>
           </div>
         </Card>
-        <CloseRateChart periodFiltered={periodFiltered} fields={fields} />
+        <CloseRateChart meetingsRecords={meetingsRecords} fields={fields} />
         <div className="analytics-empty" />
       </div>
 
