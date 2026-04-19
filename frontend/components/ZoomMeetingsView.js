@@ -3,6 +3,7 @@ import { Card, Table, Badge, Text, Heading, Flex, Callout } from '@radix-ui/them
 import {
   LineChart, Line, XAxis, YAxis, Tooltip,
   CartesianGrid, ResponsiveContainer,
+  PieChart, Pie, Cell,
 } from 'recharts';
 
 const CHART_TITLES = {
@@ -122,6 +123,63 @@ function getPeriodRange(period) {
   return null;
 }
 
+function CloseRateChart({ periodFiltered, fields }) {
+  const { closed, total } = useMemo(() => {
+    if (!periodFiltered.length || !fields.dealClosed) return { closed: 0, total: 0 };
+    let total = periodFiltered.length;
+    let closed = 0;
+    for (const meeting of periodFiltered) {
+      const val = meeting.getCellValue(fields.dealClosed);
+      if (val === true || val === 1 || val?.name === 'כן' || val === 'כן') closed++;
+    }
+    return { closed, total };
+  }, [periodFiltered, fields]);
+
+  const rate = total > 0 ? Math.round((closed / total) * 100) : 0;
+  const color = rate >= 40 ? 'var(--green-9)' : rate >= 20 ? 'var(--amber-9)' : 'var(--red-9)';
+  const data = [{ value: rate }, { value: 100 - rate }];
+
+  return (
+    <Card className="chart-section">
+      <Text size="4" weight="bold">יחס המרה — Close Rate</Text>
+      <div className="chart-container" style={{ position: 'relative' }}>
+        <ResponsiveContainer width="100%" height={220}>
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="85%"
+              startAngle={180}
+              endAngle={0}
+              innerRadius="58%"
+              outerRadius="82%"
+              dataKey="value"
+              strokeWidth={0}
+            >
+              <Cell fill={color} />
+              <Cell fill="var(--gray-4)" />
+            </Pie>
+          </PieChart>
+        </ResponsiveContainer>
+        <div style={{
+          position: 'absolute', bottom: 36,
+          left: 0, right: 0, textAlign: 'center', pointerEvents: 'none',
+        }}>
+          <div style={{ fontSize: '2.2rem', fontWeight: 700, color, lineHeight: 1 }}>{rate}%</div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--gray-10)', marginTop: 5 }}>
+            {closed} מתוך {total} פגישות סגרו
+          </div>
+          {total === 0 && (
+            <div style={{ fontSize: '0.72rem', color: 'var(--gray-8)', marginTop: 4 }}>
+              אין נתונים לתקופה זו
+            </div>
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 export default function ZoomMeetingsView({ meetingsRecords, meetingsTable, leadsRecords, period }) {
   const fields = useMemo(() => {
     if (!meetingsTable) return {};
@@ -132,6 +190,7 @@ export default function ZoomMeetingsView({ meetingsRecords, meetingsTable, leads
       link:           meetingsTable.getFieldByNameIfExists('קישור לפגישה'),
       reminderStatus:    meetingsTable.getFieldByNameIfExists('סטטוס תזכורת - כשעה לפני'),
       reminderSameDay:   meetingsTable.getFieldByNameIfExists('תזכורת - ביום הפגישה'),
+      dealClosed:        meetingsTable.getFieldByNameIfExists('נסגרה עסקה ?'),
     };
   }, [meetingsTable]);
 
@@ -235,7 +294,7 @@ export default function ZoomMeetingsView({ meetingsRecords, meetingsTable, leads
             </ResponsiveContainer>
           </div>
         </Card>
-        <div className="analytics-empty" />
+        <CloseRateChart periodFiltered={periodFiltered} fields={fields} />
         <div className="analytics-empty" />
       </div>
 
