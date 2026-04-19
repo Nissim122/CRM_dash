@@ -334,8 +334,7 @@ export default function ZoomMeetingsView({ meetingsRecords, meetingsTable, leads
                 const link          = fields.link ? record.getCellValueAsString(fields.link) : '';
                 const reminder      = fields.reminderStatus  ? record.getCellValueAsString(fields.reminderStatus)  : '';
                 const reminderDay   = fields.reminderSameDay ? record.getCellValueAsString(fields.reminderSameDay) : '';
-                const dealClosed    = fields.dealClosed ? record.getCellValue(fields.dealClosed) : null;
-                const dealClosedStr = fields.dealClosed ? record.getCellValueAsString(fields.dealClosed) : '';
+                const dealClosed = fields.dealClosed ? record.getCellValue(fields.dealClosed) : null;
 
                 return (
                   <Table.Row
@@ -361,11 +360,9 @@ export default function ZoomMeetingsView({ meetingsRecords, meetingsTable, leads
 
                     {/* נסגרה עסקה */}
                     <Table.Cell>
-                      {dealClosed === true || dealClosed === 1 || dealClosedStr === 'כן'
+                      {dealClosed === true
                         ? <Badge color="green" variant="solid">סגור</Badge>
-                        : dealClosed === false || dealClosedStr === 'לא'
-                          ? <Badge color="gray" variant="soft">לא</Badge>
-                          : <Text color="gray" size="2">—</Text>
+                        : <Text color="gray" size="2">—</Text>
                       }
                     </Table.Cell>
 
