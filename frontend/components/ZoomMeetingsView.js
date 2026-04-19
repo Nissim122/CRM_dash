@@ -197,8 +197,6 @@ export default function ZoomMeetingsView({ meetingsRecords, meetingsTable, leads
       </div>
 
       <div className="analytics-row">
-        <div className="analytics-empty" />
-        <div className="analytics-empty" />
         <Card className="chart-section">
           <Text size="4" weight="bold">{CHART_TITLES[period] ?? 'פגישות זום לאורך זמן'}</Text>
           <div className="chart-container">
@@ -237,6 +235,8 @@ export default function ZoomMeetingsView({ meetingsRecords, meetingsTable, leads
             </ResponsiveContainer>
           </div>
         </Card>
+        <div className="analytics-empty" />
+        <div className="analytics-empty" />
       </div>
 
     <div className="ops-layout">
