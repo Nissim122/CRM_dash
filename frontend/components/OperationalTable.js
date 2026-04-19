@@ -90,6 +90,7 @@ export default function OperationalTable({ records, fields, table, interactionsT
   const [presetName,      setPresetName]      = useState('');
   const [tick,            setTick]            = useState(0);
   const [activePresetId,  setActivePresetId]  = useState(null);
+  const [uploadingIds,    setUploadingIds]    = useState(new Set());
 
   const expandedPanelRef = useRef(null);
   const pencilBtnRefs    = useRef({});
@@ -107,6 +108,8 @@ export default function OperationalTable({ records, fields, table, interactionsT
 
   const [interactionsModal,   setInteractionsModal]   = useState(null);
   const [interactionDetailId, setInteractionDetailId] = useState(null);
+  const [noAnswerModal,       setNoAnswerModal]        = useState(null);
+  const [noAnswerSaving,      setNoAnswerSaving]       = useState(false);
 
   const interactionsById = useMemo(
     () => new Map((interactionsRecords ?? []).map((r) => [r.id, r])),
@@ -341,6 +344,20 @@ export default function OperationalTable({ records, fields, table, interactionsT
     setDraftValues((prev) => ({ ...prev, [key]: val }));
   }
 
+  async function toggleNoAnswer(record, fieldKey) {
+    const field = fields[fieldKey];
+    if (!field || noAnswerSaving) return;
+    const current = record.getCellValue(field);
+    setNoAnswerSaving(true);
+    try {
+      await table.updateRecordAsync(record, { [field.id]: !current });
+    } catch {
+      setSaveError('שגיאה בשמירה — בדוק הרשאות');
+    } finally {
+      setNoAnswerSaving(false);
+    }
+  }
+
   return (
     <div className="ops-layout">
 
@@ -438,7 +455,7 @@ export default function OperationalTable({ records, fields, table, interactionsT
 
             {fields.messageSent && (
               <div className="filter-group">
-                <span className="filter-label">נשלחה הודעה</span>
+                <span className="filter-label">נשלחה הודעת ברכה</span>
                 <div className="filter-chips-row">
                   {[{ key: 'all', label: 'הכל' }, { key: 'yes', label: 'כן' }, { key: 'no', label: 'לא' }].map(({ key, label }) => (
                     <button
@@ -527,13 +544,15 @@ export default function OperationalTable({ records, fields, table, interactionsT
             <Table.Header>
               <Table.Row>
                 <Table.ColumnHeaderCell style={{ width: 40 }}></Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell>הצעה נשלחה</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>הצעת עבודה</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>הצעה נשלחה בתאריך</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>תאריך יצירה</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>הערות</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>מקור</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>זמן חזרה</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>ניקוד</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell>נשלחה הודעה</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>נשלחה הודעת ברכה</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>אין מענה</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>אינטרקציות</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>סטטוס</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>שם</Table.ColumnHeaderCell>
@@ -543,7 +562,7 @@ export default function OperationalTable({ records, fields, table, interactionsT
             <Table.Body>
               {filtered.length === 0 && (
                 <Table.Row>
-                  <Table.Cell colSpan={12}>
+                  <Table.Cell colSpan={14}>
                     <Text color="gray" align="center" style={{ display: 'block', padding: '24px' }}>
                       אין לידים להצגה
                     </Text>
@@ -605,6 +624,70 @@ export default function OperationalTable({ records, fields, table, interactionsT
                       ) : (
                         <Text color="gray" size="1">—</Text>
                       )}
+                    </Table.Cell>
+
+                    {/* הצעת עבודה */}
+                    <Table.Cell>
+                      {(() => {
+                        const attachments = fields.proposalFile ? record.getCellValue(fields.proposalFile) : null;
+                        const isUploading = uploadingIds.has(record.id);
+                        const handleUpload = async (e) => {
+                          const file = e.target.files[0];
+                          if (!file || !fields.proposalFile || isUploading) return;
+                          e.target.value = '';
+                          const reader = new FileReader();
+                          reader.onload = async (ev) => {
+                            setUploadingIds((prev) => new Set(prev).add(record.id));
+                            try {
+                              const existing = (attachments || []).map((a) => ({ url: a.url }));
+                              await table.updateRecordAsync(record, {
+                                [fields.proposalFile.name]: [...existing, { url: ev.target.result, filename: file.name }],
+                              });
+                            } catch (err) {
+                              setSaveError('שגיאה בהעלאת קובץ: ' + err.message);
+                            } finally {
+                              setUploadingIds((prev) => { const s = new Set(prev); s.delete(record.id); return s; });
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                        };
+                        return (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 90 }}>
+                            {attachments && attachments.length > 0 ? (
+                              attachments.map((att) => (
+                                <a
+                                  key={att.id}
+                                  href={att.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  title={att.filename}
+                                  style={{ color: 'var(--indigo-11)', fontSize: 11, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 100, display: 'block' }}
+                                >
+                                  {att.filename}
+                                </a>
+                              ))
+                            ) : (
+                              !isExpanded && <Text color="gray" size="1">—</Text>
+                            )}
+                            {isExpanded && (
+                              <label style={{ cursor: isUploading ? 'default' : 'pointer', marginTop: 2 }}>
+                                <input type="file" style={{ display: 'none' }} disabled={isUploading} onChange={handleUpload} />
+                                <span style={{
+                                  fontSize: 11,
+                                  color: isUploading ? 'var(--gray-9)' : 'var(--indigo-11)',
+                                  border: `1px dashed ${isUploading ? 'var(--gray-7)' : 'var(--indigo-7)'}`,
+                                  borderRadius: 4,
+                                  padding: '2px 6px',
+                                  display: 'inline-block',
+                                  opacity: isUploading ? 0.6 : 1,
+                                }}>
+                                  {isUploading ? 'מעלה…' : '+ העלה קובץ'}
+                                </span>
+                              </label>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </Table.Cell>
 
                     {/* הצעה נשלחה בתאריך */}
@@ -691,6 +774,25 @@ export default function OperationalTable({ records, fields, table, interactionsT
                               </svg>
                             )}
                           </span>
+                        );
+                      })()}
+                    </Table.Cell>
+
+                    {/* אין מענה */}
+                    <Table.Cell>
+                      {(() => {
+                        const c1 = fields.noAnswer1 ? record.getCellValue(fields.noAnswer1) : null;
+                        const c2 = fields.noAnswer2 ? record.getCellValue(fields.noAnswer2) : null;
+                        const c3 = fields.noAnswer3 ? record.getCellValue(fields.noAnswer3) : null;
+                        const checked = [c1, c2, c3].filter(Boolean).length;
+                        return (
+                          <button
+                            className="interactions-count-btn"
+                            style={checked === 0 ? { opacity: 0.45 } : {}}
+                            onClick={(e) => { e.stopPropagation(); setNoAnswerModal({ recordId: record.id }); }}
+                          >
+                            {checked}/3
+                          </button>
                         );
                       })()}
                     </Table.Cell>
@@ -787,6 +889,63 @@ export default function OperationalTable({ records, fields, table, interactionsT
           ))}
         </aside>
       )}
+
+      {/* No-answer modal */}
+      {noAnswerModal && (() => {
+        const record = records.find((r) => r.id === noAnswerModal.recordId);
+        if (!record) return null;
+        const name = fields.name ? record.getCellValue(fields.name) : record.name;
+        const rows = [
+          { label: 'אין מענה ראשון',  checkKey: 'noAnswer1', dateKey: 'noAnswerDate1' },
+          { label: 'אין מענה שני',    checkKey: 'noAnswer2', dateKey: 'noAnswerDate2' },
+          { label: 'אין מענה שלישי', checkKey: 'noAnswer3', dateKey: 'noAnswerDate3' },
+        ];
+        return (
+          <div
+            className="interactions-overlay"
+            onMouseDown={(e) => { if (e.target === e.currentTarget) setNoAnswerModal(null); }}
+          >
+            <div className="interactions-modal" style={{ minWidth: 340 }}>
+              <div className="interactions-modal__header">
+                <span style={{ width: 28 }} />
+                <span className="interactions-modal__title">אין מענה — {name || '—'}</span>
+                <button className="interactions-modal__close" onClick={() => setNoAnswerModal(null)} title="סגור">×</button>
+              </div>
+              <div className="interactions-modal__body" style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {rows.map(({ label, checkKey, dateKey }) => {
+                  const checked  = fields[checkKey]  ? record.getCellValue(fields[checkKey])  : false;
+                  const dateRaw  = fields[dateKey]   ? record.getCellValue(fields[dateKey])   : null;
+                  const dateStr  = dateRaw ? new Date(dateRaw).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—';
+                  return (
+                    <div key={checkKey} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 10px', borderRadius: 8, background: checked ? 'var(--indigo-a3)' : 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                      <button
+                        disabled={noAnswerSaving}
+                        onClick={() => toggleNoAnswer(record, checkKey)}
+                        style={{
+                          width: 22, height: 22, borderRadius: 5, border: '2px solid var(--indigo-7)',
+                          background: checked ? 'var(--indigo-9)' : 'transparent',
+                          cursor: noAnswerSaving ? 'default' : 'pointer',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          flexShrink: 0, transition: 'background 0.15s',
+                        }}
+                        title={checked ? 'בטל סימון' : 'סמן'}
+                      >
+                        {checked && (
+                          <svg viewBox="0 0 12 10" width="10" height="10" fill="none">
+                            <polyline points="1,5 4.5,8.5 11,1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </button>
+                      <span style={{ flex: 1, fontSize: '0.88rem', color: 'var(--text-primary)', fontWeight: checked ? 600 : 400 }}>{label}</span>
+                      <span style={{ fontSize: '0.8rem', color: checked ? 'var(--indigo-11)' : 'var(--text-muted)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{dateStr}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Interactions modal */}
       {interactionsModal && (

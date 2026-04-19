@@ -55,7 +55,7 @@ export default function App() {
       phone:            f('טלפון'),
       score:            f('ניקוד לפי אינטרקציות'),
       interactions:     f('אינטרקציות'),
-      messageSent:      f('נשלחה הודעה לליד ?'),
+      messageSent:      f('נשלחה הודעה לליד ? ') ?? f('נשלחה הודעה לליד ?') ?? f('נשלחה הודעה לליד?'),
       serviceType:      f('סוג שירות'),
       leadSource:       f('מקור ליד'),
       dealValue:        f('שווי עסקה משוער'),
@@ -63,6 +63,13 @@ export default function App() {
       responseWait:     f('זמן המתנה לליד'),
       nextAction:       f('פעולה הבאה') ?? f('הערות לליד'),
       proposalDate:     f('הצעה נשלחה בתאריך'),
+      proposalFile:     f('הצעת עבודה'),
+      noAnswer1:        f('הודעת אין מענה 1'),
+      noAnswerDate1:    f('תאריך אין מענה ראשון') ?? f('תאריך אין מענה'),
+      noAnswer2:        f('הודעת אין מענה 2') ?? f('אין מענה שני'),
+      noAnswerDate2:    f('תאריך אין מענה שני') ?? f('תאריך אין מענה 2'),
+      noAnswer3:        f('אין מענה 3') ?? f('הודעת אין מענה 3') ?? f('אין מענה שלישי'),
+      noAnswerDate3:    f('תאריך אין מענה שלישי') ?? f('תאריך אין מענה 3'),
     };
   }, [leadsTable]);
 
