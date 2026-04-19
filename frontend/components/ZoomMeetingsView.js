@@ -1,5 +1,81 @@
 import React, { useMemo, useState } from 'react';
 import { Card, Table, Badge, Text, Heading, Flex, Callout } from '@radix-ui/themes';
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip,
+  CartesianGrid, ResponsiveContainer,
+} from 'recharts';
+
+const CHART_TITLES = {
+  week:  'פגישות זום — 7 ימים אחרונים',
+  month: 'פגישות זום — 30 ימים אחרונים',
+  year:  'פגישות זום — 12 חודשים אחרונים',
+  all:   'פגישות זום — כל הזמן',
+};
+
+function buildMeetingChartData(records, startTimeField, period) {
+  const today = new Date();
+
+  if (period === 'year') {
+    const buckets = {};
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      buckets[`${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}`] = 0;
+    }
+    for (const r of records) {
+      const raw = r.getCellValue(startTimeField);
+      if (!raw) continue;
+      const d = new Date(raw);
+      const key = `${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}`;
+      if (key in buckets) buckets[key]++;
+    }
+    return Object.entries(buckets).map(([date, count]) => ({ date, פגישות: count }));
+  }
+
+  if (period === 'all') {
+    let earliest = null;
+    for (const r of records) {
+      const raw = r.getCellValue(startTimeField);
+      if (!raw) continue;
+      const d = new Date(raw);
+      if (!earliest || d < earliest) earliest = d;
+    }
+    if (!earliest) return [];
+    const buckets = {};
+    const cursor = new Date(earliest.getFullYear(), earliest.getMonth(), 1);
+    const end = new Date(today.getFullYear(), today.getMonth(), 1);
+    while (cursor <= end) {
+      buckets[`${cursor.getMonth() + 1}/${String(cursor.getFullYear()).slice(2)}`] = 0;
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+    for (const r of records) {
+      const raw = r.getCellValue(startTimeField);
+      if (!raw) continue;
+      const d = new Date(raw);
+      const key = `${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}`;
+      if (key in buckets) buckets[key]++;
+    }
+    return Object.entries(buckets).map(([date, count]) => ({ date, פגישות: count }));
+  }
+
+  const dayCount = period === 'week' ? 7 : 30;
+  const buckets = {};
+  for (let i = dayCount - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    buckets[`${d.getMonth() + 1}/${d.getDate()}`] = 0;
+  }
+  for (const r of records) {
+    const raw = r.getCellValue(startTimeField);
+    if (!raw) continue;
+    const d = new Date(raw);
+    const diffDays = Math.floor((today - d) / 86400000);
+    if (diffDays >= 0 && diffDays < dayCount) {
+      const key = `${d.getMonth() + 1}/${d.getDate()}`;
+      if (key in buckets) buckets[key]++;
+    }
+  }
+  return Object.entries(buckets).map(([date, count]) => ({ date, פגישות: count }));
+}
 
 const REMINDER_COLOR = {
   'נשלחה':    'green',
@@ -88,6 +164,11 @@ export default function ZoomMeetingsView({ meetingsRecords, meetingsTable, leads
     [sorted, fields.isToday]
   );
 
+  const chartData = useMemo(() => {
+    if (!fields.startTime || !meetingsRecords) return [];
+    return buildMeetingChartData(meetingsRecords, fields.startTime, period);
+  }, [meetingsRecords, fields.startTime, period]);
+
   const kpiCards = [
     { id: 'total', label: 'סה"כ פגישות', value: periodFiltered.length, color: '#6366f1', icon: '📅' },
     { id: 'today', label: 'פגישות היום',  value: todayCount,                   color: '#10b981', icon: '✅' },
@@ -114,6 +195,45 @@ export default function ZoomMeetingsView({ meetingsRecords, meetingsTable, leads
           </Card>
         ))}
       </div>
+
+      <Card className="chart-section">
+        <Text size="4" weight="bold">{CHART_TITLES[period] ?? 'פגישות זום לאורך זמן'}</Text>
+        <div className="chart-container">
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--gray-4)" />
+              <XAxis
+                dataKey="date"
+                tick={{ fill: 'var(--gray-10)', fontSize: 11 }}
+                tickLine={false}
+                interval={period === 'week' ? 0 : (period === 'year' || period === 'all') ? 1 : 4}
+              />
+              <YAxis
+                tick={{ fill: 'var(--gray-10)', fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+                allowDecimals={false}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: 'var(--color-panel-solid)',
+                  border: '1px solid var(--gray-6)',
+                  borderRadius: 8,
+                  color: 'var(--gray-12)',
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="פגישות"
+                stroke="var(--indigo-9)"
+                strokeWidth={2.5}
+                dot={period === 'week'}
+                activeDot={{ r: 5, fill: 'var(--indigo-9)' }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </Card>
 
     <div className="ops-layout">
       <div className="ops-section">
