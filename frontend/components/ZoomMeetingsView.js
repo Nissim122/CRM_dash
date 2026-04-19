@@ -196,44 +196,48 @@ export default function ZoomMeetingsView({ meetingsRecords, meetingsTable, leads
         ))}
       </div>
 
-      <Card className="chart-section">
-        <Text size="4" weight="bold">{CHART_TITLES[period] ?? 'פגישות זום לאורך זמן'}</Text>
-        <div className="chart-container">
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--gray-4)" />
-              <XAxis
-                dataKey="date"
-                tick={{ fill: 'var(--gray-10)', fontSize: 11 }}
-                tickLine={false}
-                interval={period === 'week' ? 0 : (period === 'year' || period === 'all') ? 1 : 4}
-              />
-              <YAxis
-                tick={{ fill: 'var(--gray-10)', fontSize: 11 }}
-                tickLine={false}
-                axisLine={false}
-                allowDecimals={false}
-              />
-              <Tooltip
-                contentStyle={{
-                  background: 'var(--color-panel-solid)',
-                  border: '1px solid var(--gray-6)',
-                  borderRadius: 8,
-                  color: 'var(--gray-12)',
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="פגישות"
-                stroke="var(--indigo-9)"
-                strokeWidth={2.5}
-                dot={period === 'week'}
-                activeDot={{ r: 5, fill: 'var(--indigo-9)' }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
+      <div className="analytics-row">
+        <div className="analytics-empty" />
+        <div className="analytics-empty" />
+        <Card className="chart-section">
+          <Text size="4" weight="bold">{CHART_TITLES[period] ?? 'פגישות זום לאורך זמן'}</Text>
+          <div className="chart-container">
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--gray-4)" />
+                <XAxis
+                  dataKey="date"
+                  tick={{ fill: 'var(--gray-10)', fontSize: 11 }}
+                  tickLine={false}
+                  interval={period === 'week' ? 0 : (period === 'year' || period === 'all') ? 1 : 4}
+                />
+                <YAxis
+                  tick={{ fill: 'var(--gray-10)', fontSize: 11 }}
+                  tickLine={false}
+                  axisLine={false}
+                  allowDecimals={false}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: 'var(--color-panel-solid)',
+                    border: '1px solid var(--gray-6)',
+                    borderRadius: 8,
+                    color: 'var(--gray-12)',
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="פגישות"
+                  stroke="var(--indigo-9)"
+                  strokeWidth={2.5}
+                  dot={period === 'week'}
+                  activeDot={{ r: 5, fill: 'var(--indigo-9)' }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      </div>
 
     <div className="ops-layout">
       <div className="ops-section">
