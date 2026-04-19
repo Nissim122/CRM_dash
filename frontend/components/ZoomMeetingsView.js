@@ -189,7 +189,7 @@ export default function ZoomMeetingsView({ meetingsRecords, meetingsTable, leads
       link:           meetingsTable.getFieldByNameIfExists('קישור לפגישה'),
       reminderStatus:    meetingsTable.getFieldByNameIfExists('סטטוס תזכורת - כשעה לפני'),
       reminderSameDay:   meetingsTable.getFieldByNameIfExists('תזכורת - ביום הפגישה'),
-      dealClosed:        meetingsTable.getFieldByNameIfExists('נסגרה עסקה ?'),
+      dealClosed:        meetingsTable.fields.find(f => f.name.includes('נסגרה')),
     };
   }, [meetingsTable]);
 
@@ -293,7 +293,7 @@ export default function ZoomMeetingsView({ meetingsRecords, meetingsTable, leads
             </ResponsiveContainer>
           </div>
         </Card>
-        <CloseRateChart meetingsRecords={meetingsRecords} fields={fields} />
+        <CloseRateChart meetingsRecords={periodFiltered} fields={fields} />
         <div className="analytics-empty" />
       </div>
 
