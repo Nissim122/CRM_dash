@@ -84,8 +84,7 @@ export default function App() {
       products:   f('מוצרים'),
       totalDeal:  f('סכום עסקה כולל'),
       totalPaid:  f('סך הכל שולם') ?? f('תשלום כולל') ?? f('סה"כ שולם'),
-      balance:    f('יתרה לגבייה') ?? f('יתרה לגביה'),
-      fullyPaid:  f('שולם במלואו?'),
+      fullyPaid:  f('שולם במלואו ?') ?? f('שולם במלואו?'),
     };
   }, [salesTable]);
 
@@ -114,7 +113,7 @@ export default function App() {
     return {
       lead:          f('לקוח'),
       sales:         f('מכירות') ?? f('מכירות שנעשו ללקוח') ?? f('מכירות שנעשו'),
-      total:         f('סה"כ') ?? f('סה"כ הכנסות') ?? f('סה"כ (rollup הכנסות)'),
+      total:         f('סה"כ'),
       projectStatus: f('סטטוס פרוייקט'),
       notes:         f('הערות ללקוח'),
       contract:      f('חוזה'),

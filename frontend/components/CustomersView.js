@@ -61,11 +61,6 @@ export default function CustomersView({
   const origRef          = useRef(origValues);
   const expandedRowRef   = useRef(expandedRow);
 
-  const salesById = useMemo(
-    () => new Map((salesRecords ?? []).map((r) => [r.id, r])),
-    [salesRecords]
-  );
-
   const paymentsBySaleId = useMemo(() => {
     const map = new Map();
     if (!paymentsFields?.projectLink) return map;
@@ -123,7 +118,6 @@ export default function CustomersView({
 
         const totalDeal = salesFields.totalDeal ? (Number(s.getCellValue(salesFields.totalDeal)) || 0) : 0;
         const totalPaid = salesFields.totalPaid ? (Number(s.getCellValue(salesFields.totalPaid)) || 0) : 0;
-        const balance   = salesFields.balance   ? (Number(s.getCellValue(salesFields.balance))   || 0) : 0;
         const fpRaw     = salesFields.fullyPaid  ?  s.getCellValue(salesFields.fullyPaid)              : null;
         const fullyPaid = fpRaw === true || fpRaw === '✅' || fpRaw === 1;
 
@@ -144,7 +138,7 @@ export default function CustomersView({
             return { num, amount: amt, status: st, dueDate: dueStr };
           });
 
-        return { id: s.id, date: dateStr, products: productsStr, totalDeal, totalPaid, balance, fullyPaid, payments: salePayments };
+        return { id: s.id, date: dateStr, products: productsStr, totalDeal, totalPaid, fullyPaid, payments: salePayments };
       });
 
     setSalesModal({ customerName, salesData });
@@ -314,20 +308,6 @@ export default function CustomersView({
     return map;
   }, [leadsRecords]);
 
-  const revenueByCustomer = useMemo(() => {
-    const map = new Map();
-    for (const record of customersRecords) {
-      const salesLinks = customersFields.sales ? record.getCellValue(customersFields.sales) : null;
-      const total = (salesLinks ?? []).reduce((sum, link) => {
-        const sale = salesById.get(link.id);
-        const v = sale && salesFields.totalPaid ? sale.getCellValue(salesFields.totalPaid) : 0;
-        return sum + (Number(v) || 0);
-      }, 0);
-      map.set(record.id, total);
-    }
-    return map;
-  }, [customersRecords, customersFields, salesById, salesFields]);
-
   const filteredCustomers = useMemo(() => {
     let base = customersRecords;
     if (filters.search) {
@@ -340,7 +320,10 @@ export default function CustomersView({
     }
     if (filters.minRevenue) {
       const min = Number(filters.minRevenue);
-      base = base.filter((r) => (revenueByCustomer.get(r.id) ?? 0) >= min);
+      base = base.filter((r) => {
+        const v = customersFields.total ? r.getCellValue(customersFields.total) : 0;
+        return (Number(v) || 0) >= min;
+      });
     }
     if (filters.projectStatus) {
       base = base.filter((r) => {
@@ -361,9 +344,9 @@ export default function CustomersView({
       });
     }
     return base;
-  }, [customersRecords, customersFields, filters, revenueByCustomer, leadsById, leadsFields]);
+  }, [customersRecords, customersFields, filters, leadsById, leadsFields]);
 
-  const colCount = 7
+  const colCount = 6
     + (customersFields.projectStatus ? 1 : 0)
     + (customersFields.notes         ? 1 : 0)
     + (customersFields.contract      ? 1 : 0)
@@ -503,8 +486,6 @@ export default function CustomersView({
               <Table.Row>
                 <Table.ColumnHeaderCell>מכירות</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>סה"כ הכנסות</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell>יתרה לגבייה</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell>שולם?</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>תאריך יצירה</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>מקור ליד</Table.ColumnHeaderCell>
                 {customersFields.projectStatus && (
@@ -535,7 +516,7 @@ export default function CustomersView({
 
                 const leadLinks  = customersFields.lead  ? record.getCellValue(customersFields.lead)  : null;
                 const salesLinks = customersFields.sales ? record.getCellValue(customersFields.sales) : null;
-                const totalRaw   = revenueByCustomer.get(record.id);
+                const totalRaw   = customersFields.total ? record.getCellValue(customersFields.total) : null;
 
                 const name       = leadLinks?.[0]?.name ?? '—';
                 const salesCount = Array.isArray(salesLinks) ? salesLinks.length : 0;
@@ -585,37 +566,6 @@ export default function CustomersView({
                       <Text color="amber" weight="bold">{totalStr}</Text>
                     </Table.Cell>
 
-                    {/* יתרה לגבייה */}
-                    <Table.Cell>
-                      {(() => {
-                        const links = Array.isArray(salesLinks) ? salesLinks : [];
-                        const bal = links.reduce((sum, link) => {
-                          const sale = salesById.get(link.id);
-                          const v = sale && salesFields.balance ? sale.getCellValue(salesFields.balance) : 0;
-                          return sum + (Number(v) || 0);
-                        }, 0);
-                        return bal > 0
-                          ? <Text style={{ color: 'var(--red-11)', fontWeight: 600 }}>₪{bal.toLocaleString('he-IL')}</Text>
-                          : <Text color="gray">—</Text>;
-                      })()}
-                    </Table.Cell>
-
-                    {/* שולם במלואו? */}
-                    <Table.Cell style={{ textAlign: 'center' }}>
-                      {(() => {
-                        const links = Array.isArray(salesLinks) ? salesLinks : [];
-                        if (links.length === 0) return <Text color="gray">—</Text>;
-                        const allPaid = links.every((link) => {
-                          const sale = salesById.get(link.id);
-                          if (!sale || !salesFields.fullyPaid) return false;
-                          const fp = sale.getCellValue(salesFields.fullyPaid);
-                          return fp === true || fp === '✅' || fp === 1;
-                        });
-                        return allPaid
-                          ? <Text>✅</Text>
-                          : <Text color="gray" size="1">–</Text>;
-                      })()}
-                    </Table.Cell>
 
                     {/* תאריך יצירה */}
                     <Table.Cell>
@@ -779,7 +729,6 @@ export default function CustomersView({
                           <th>מוצרים</th>
                           <th>סכום עסקה</th>
                           <th>שולם</th>
-                          <th>יתרה</th>
                           <th>סטטוס</th>
                         </tr>
                       </thead>
@@ -792,9 +741,6 @@ export default function CustomersView({
                           </td>
                           <td style={{ whiteSpace: 'nowrap', color: 'var(--green-11)' }}>
                             {sale.totalPaid ? `₪${sale.totalPaid.toLocaleString('he-IL')}` : '—'}
-                          </td>
-                          <td style={{ whiteSpace: 'nowrap', color: sale.balance > 0 ? 'var(--red-11)' : 'var(--gray-9)', fontWeight: sale.balance > 0 ? 600 : 400 }}>
-                            {sale.balance > 0 ? `₪${sale.balance.toLocaleString('he-IL')}` : '—'}
                           </td>
                           <td style={{ textAlign: 'center' }}>{sale.fullyPaid ? '✅' : '—'}</td>
                         </tr>
