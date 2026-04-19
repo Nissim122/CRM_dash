@@ -61,6 +61,19 @@ export default function CustomersView({
   const origRef          = useRef(origValues);
   const expandedRowRef   = useRef(expandedRow);
 
+  const salesByCustomerId = useMemo(() => {
+    const map = new Map();
+    if (!salesFields?.customersLink) return map;
+    for (const s of salesRecords) {
+      const links = s.getCellValue(salesFields.customersLink) || [];
+      for (const link of links) {
+        if (!map.has(link.id)) map.set(link.id, []);
+        map.get(link.id).push(s);
+      }
+    }
+    return map;
+  }, [salesRecords, salesFields]);
+
   const paymentsBySaleId = useMemo(() => {
     const map = new Map();
     if (!paymentsFields?.projectLink) return map;
@@ -100,13 +113,11 @@ export default function CustomersView({
   }, [salesModal]);
 
   function openSalesModal(record) {
-    const leadLinks  = customersFields.lead  ? record.getCellValue(customersFields.lead)  : null;
-    const salesLinks = customersFields.sales ? record.getCellValue(customersFields.sales) : null;
+    const leadLinks    = customersFields.lead ? record.getCellValue(customersFields.lead) : null;
     const customerName = leadLinks?.[0]?.name ?? '—';
-    const saleIds = new Set((salesLinks ?? []).map((s) => s.id));
+    const customerSales = salesByCustomerId.get(record.id) ?? [];
 
-    const salesData = salesRecords
-      .filter((s) => saleIds.has(s.id))
+    const salesData = customerSales
       .map((s) => {
         const dateRaw = salesFields.date ? s.getCellValue(salesFields.date) : null;
         const dateStr = dateRaw
@@ -515,11 +526,10 @@ export default function CustomersView({
                 const isExpanded = expandedRow === record.id;
 
                 const leadLinks  = customersFields.lead  ? record.getCellValue(customersFields.lead)  : null;
-                const salesLinks = customersFields.sales ? record.getCellValue(customersFields.sales) : null;
                 const totalRaw   = customersFields.total ? record.getCellValue(customersFields.total) : null;
 
                 const name       = leadLinks?.[0]?.name ?? '—';
-                const salesCount = Array.isArray(salesLinks) ? salesLinks.length : 0;
+                const salesCount = (salesByCustomerId.get(record.id) ?? []).length;
                 const totalStr   = totalRaw ? `₪${totalRaw.toLocaleString('he-IL')}` : '—';
 
                 const leadRecord = leadLinks?.[0] ? leadsById.get(leadLinks[0].id) : null;

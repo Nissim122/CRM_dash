@@ -27,7 +27,7 @@ const VIEWS = [
 
 export default function App() {
   const base = useBase();
-  const [period, setPeriod]       = useState('month');
+  const [period, setPeriod]       = useState('all');
   const [activeView, setActiveView] = useState('leads');
   useWatchable(viewport, ['isFullscreen']);
   useEffect(() => { viewport.enterFullscreenIfPossible(); }, []);
@@ -82,9 +82,10 @@ export default function App() {
       price:      f('מחיר (from מחיר)'),
       date:       f('תאריך'),
       products:   f('מוצרים'),
-      totalDeal:  f('סכום עסקה כולל'),
-      totalPaid:  f('סך הכל שולם') ?? f('תשלום כולל') ?? f('סה"כ שולם'),
-      fullyPaid:  f('שולם במלואו ?') ?? f('שולם במלואו?'),
+      totalDeal:     f('סכום עסקה כולל'),
+      totalPaid:     f('סך הכל שולם') ?? f('תשלום כולל') ?? f('סה"כ שולם'),
+      fullyPaid:     f('שולם במלואו ?') ?? f('שולם במלואו?'),
+      customersLink: f('לקוחות'),
     };
   }, [salesTable]);
 
