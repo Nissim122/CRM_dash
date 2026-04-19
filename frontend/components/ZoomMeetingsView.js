@@ -309,6 +309,7 @@ export default function ZoomMeetingsView({ meetingsRecords, meetingsTable, leads
             <Table.Header>
               <Table.Row>
                 <Table.ColumnHeaderCell>קישור לפגישה</Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell>נסגרה עסקה?</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>תזכורת כשעה לפני</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>תזכורת ביום הפגישה</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>היום?</Table.ColumnHeaderCell>
@@ -319,7 +320,7 @@ export default function ZoomMeetingsView({ meetingsRecords, meetingsTable, leads
             <Table.Body>
               {sorted.length === 0 && (
                 <Table.Row>
-                  <Table.Cell colSpan={6}>
+                  <Table.Cell colSpan={7}>
                     <Text color="gray" align="center" style={{ display: 'block', padding: '24px' }}>
                       אין פגישות להצגה
                     </Text>
@@ -334,6 +335,8 @@ export default function ZoomMeetingsView({ meetingsRecords, meetingsTable, leads
                 const link          = fields.link ? record.getCellValueAsString(fields.link) : '';
                 const reminder      = fields.reminderStatus  ? record.getCellValueAsString(fields.reminderStatus)  : '';
                 const reminderDay   = fields.reminderSameDay ? record.getCellValueAsString(fields.reminderSameDay) : '';
+                const dealClosed    = fields.dealClosed ? record.getCellValue(fields.dealClosed) : null;
+                const dealClosedStr = fields.dealClosed ? record.getCellValueAsString(fields.dealClosed) : '';
 
                 return (
                   <Table.Row
@@ -355,6 +358,16 @@ export default function ZoomMeetingsView({ meetingsRecords, meetingsTable, leads
                       ) : (
                         <Text color="gray" size="1">—</Text>
                       )}
+                    </Table.Cell>
+
+                    {/* נסגרה עסקה */}
+                    <Table.Cell>
+                      {dealClosed === true || dealClosed === 1 || dealClosedStr === 'כן'
+                        ? <Badge color="green" variant="solid">סגור</Badge>
+                        : dealClosed === false || dealClosedStr === 'לא'
+                          ? <Badge color="gray" variant="soft">לא</Badge>
+                          : <Text color="gray" size="2">—</Text>
+                      }
                     </Table.Cell>
 
                     {/* תזכורת כשעה לפני */}
