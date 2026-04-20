@@ -86,6 +86,7 @@ export default function App() {
       totalPaid:     f('סך הכל שולם') ?? f('תשלום כולל') ?? f('סה"כ שולם'),
       fullyPaid:     f('שולם במלואו ?') ?? f('שולם במלואו?'),
       customersLink: f('לקוחות'),
+      leadsLink:     f('לידים') ?? f('ליד'),
     };
   }, [salesTable]);
 
@@ -111,20 +112,26 @@ export default function App() {
   const customersFields = useMemo(() => {
     if (!customersTable) return {};
     const f = (name) => customersTable.getFieldByNameIfExists(name);
+    const salesLink = salesTable
+      ? (customersTable.fields.find(
+          (field) => field.type === 'multipleRecordLinks' && field.options?.linkedTableId === salesTable.id
+        ) ?? null)
+      : null;
     return {
       lead:          f('לקוח'),
-      sales:         f('מכירות') ?? f('מכירות שנעשו ללקוח') ?? f('מכירות שנעשו'),
+      salesLink,
       total:         f('סה"כ'),
       projectStatus: f('סטטוס פרוייקט'),
       notes:         f('הערות ללקוח'),
       contract:      f('חוזה'),
     };
-  }, [customersTable]);
+  }, [customersTable, salesTable]);
 
   useEffect(() => {
     if (customersTable) console.log('[DEBUG] customers fields:', customersTable.fields.map((f) => f.name));
     if (salesTable)     console.log('[DEBUG] sales fields:',     salesTable.fields.map((f) => f.name));
-  }, [customersTable, salesTable]);
+    if (salesFields)    console.log('[DEBUG] salesFields resolved:', { customersLink: salesFields.customersLink?.name ?? 'NULL', leadsLink: salesFields.leadsLink?.name ?? 'NULL' });
+  }, [customersTable, salesTable, salesFields]);
 
   if (!leadsTable) {
     return (

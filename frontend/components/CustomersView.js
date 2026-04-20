@@ -61,18 +61,10 @@ export default function CustomersView({
   const origRef          = useRef(origValues);
   const expandedRowRef   = useRef(expandedRow);
 
-  const salesByCustomerId = useMemo(() => {
-    const map = new Map();
-    if (!salesFields?.customersLink) return map;
-    for (const s of salesRecords) {
-      const links = s.getCellValue(salesFields.customersLink) || [];
-      for (const link of links) {
-        if (!map.has(link.id)) map.set(link.id, []);
-        map.get(link.id).push(s);
-      }
-    }
-    return map;
-  }, [salesRecords, salesFields]);
+  const salesRecordsById = useMemo(
+    () => new Map((salesRecords ?? []).map((r) => [r.id, r])),
+    [salesRecords]
+  );
 
   const paymentsBySaleId = useMemo(() => {
     const map = new Map();
@@ -112,47 +104,24 @@ export default function CustomersView({
     return () => document.removeEventListener('keydown', handleKey);
   }, [salesModal]);
 
+  useEffect(() => {
+    if (!customersRecords.length) return;
+    const first = customersRecords[0];
+    const linked = customersFields.salesLink ? first.getCellValue(customersFields.salesLink) : 'FIELD NULL';
+    console.log('[DEBUG-CV] salesRec:', salesRecords?.length ?? 'NULL',
+      '| salesLink field:', customersFields.salesLink?.name ?? 'NULL',
+      '| first cust salesLinks:', linked,
+      '| salesById size:', salesRecordsById.size);
+  }, [customersRecords, salesRecords, customersFields, salesRecordsById]);
+
   function openSalesModal(record) {
     const leadLinks    = customersFields.lead ? record.getCellValue(customersFields.lead) : null;
     const customerName = leadLinks?.[0]?.name ?? '—';
-    const customerSales = salesByCustomerId.get(record.id) ?? [];
-
-    const salesData = customerSales
-      .map((s) => {
-        const dateRaw = salesFields.date ? s.getCellValue(salesFields.date) : null;
-        const dateStr = dateRaw
-          ? new Date(dateRaw).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' })
-          : '—';
-
-        const productsRaw = salesFields.products ? s.getCellValue(salesFields.products) : null;
-        const productsStr = Array.isArray(productsRaw) ? productsRaw.map((p) => p.name).join(', ') : '—';
-
-        const totalDeal = salesFields.totalDeal ? (Number(s.getCellValue(salesFields.totalDeal)) || 0) : 0;
-        const totalPaid = salesFields.totalPaid ? (Number(s.getCellValue(salesFields.totalPaid)) || 0) : 0;
-        const fpRaw     = salesFields.fullyPaid  ?  s.getCellValue(salesFields.fullyPaid)              : null;
-        const fullyPaid = fpRaw === true || fpRaw === '✅' || fpRaw === 1;
-
-        const salePayments = (paymentsFields?.projectLink ? (paymentsBySaleId.get(s.id) ?? []) : [])
-          .sort((a, b) => {
-            const na = paymentsFields.paymentNumber ? Number(a.getCellValue(paymentsFields.paymentNumber) ?? 0) : 0;
-            const nb = paymentsFields.paymentNumber ? Number(b.getCellValue(paymentsFields.paymentNumber) ?? 0) : 0;
-            return na - nb;
-          })
-          .map((p) => {
-            const num    = paymentsFields.paymentNumber ? String(p.getCellValue(paymentsFields.paymentNumber) ?? '—') : '—';
-            const amt    = paymentsFields.amount   ? (p.getCellValue(paymentsFields.amount) ?? 0) : 0;
-            const st     = paymentsFields.status   ? p.getCellValue(paymentsFields.status)?.name ?? '—' : '—';
-            const due    = paymentsFields.dueDate  ? p.getCellValue(paymentsFields.dueDate) : null;
-            const dueStr = due
-              ? new Date(due).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' })
-              : '—';
-            return { num, amount: amt, status: st, dueDate: dueStr };
-          });
-
-        return { id: s.id, date: dateStr, products: productsStr, totalDeal, totalPaid, fullyPaid, payments: salePayments };
-      });
-
-    setSalesModal({ customerName, salesData });
+    const salesLinks   = customersFields.salesLink
+      ? (record.getCellValue(customersFields.salesLink) ?? [])
+      : [];
+    const linkedIds = Array.isArray(salesLinks) ? salesLinks.map((l) => l.id) : [];
+    setSalesModal({ customerName, linkedIds });
   }
 
   const gConfig = useGlobalConfig();
@@ -529,7 +498,10 @@ export default function CustomersView({
                 const totalRaw   = customersFields.total ? record.getCellValue(customersFields.total) : null;
 
                 const name       = leadLinks?.[0]?.name ?? '—';
-                const salesCount = (salesByCustomerId.get(record.id) ?? []).length;
+                const salesLinks = customersFields.salesLink
+                  ? (record.getCellValue(customersFields.salesLink) ?? [])
+                  : [];
+                const salesCount = Array.isArray(salesLinks) ? salesLinks.length : 0;
                 const totalStr   = totalRaw ? `₪${totalRaw.toLocaleString('he-IL')}` : '—';
 
                 const leadRecord = leadLinks?.[0] ? leadsById.get(leadLinks[0].id) : null;
@@ -725,69 +697,97 @@ export default function CustomersView({
               <span className="interactions-modal__title">מכירות — {salesModal.customerName}</span>
             </div>
             <div className="interactions-modal__body">
-              {salesModal.salesData.length === 0 ? (
+              {salesModal.linkedIds.length === 0 ? (
                 <div style={{ padding: 24, textAlign: 'center', color: 'var(--gray-9)', fontSize: '0.875rem' }}>
                   אין מכירות לצפייה
                 </div>
               ) : (
-                salesModal.salesData.map((sale) => (
-                  <div key={sale.id} className="sale-block">
-                    <table className="sales-modal-table">
-                      <thead>
-                        <tr>
-                          <th>תאריך</th>
-                          <th>מוצרים</th>
-                          <th>סכום עסקה</th>
-                          <th>שולם</th>
-                          <th>סטטוס</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr>
-                          <td style={{ whiteSpace: 'nowrap' }}>{sale.date}</td>
-                          <td>{sale.products}</td>
-                          <td style={{ whiteSpace: 'nowrap', color: 'var(--amber-11)', fontWeight: 600 }}>
-                            {sale.totalDeal ? `₪${sale.totalDeal.toLocaleString('he-IL')}` : '—'}
-                          </td>
-                          <td style={{ whiteSpace: 'nowrap', color: 'var(--green-11)' }}>
-                            {sale.totalPaid ? `₪${sale.totalPaid.toLocaleString('he-IL')}` : '—'}
-                          </td>
-                          <td style={{ textAlign: 'center' }}>{sale.fullyPaid ? '✅' : '—'}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    {sale.payments.length > 0 ? (
-                      <table className="payments-sub-table">
+                salesModal.linkedIds.map((id) => {
+                  const s = salesRecordsById.get(id);
+                  if (!s) return null;
+
+                  const dateRaw     = salesFields.date      ? s.getCellValue(salesFields.date)      : null;
+                  const dateStr     = dateRaw ? new Date(dateRaw).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—';
+                  const productsRaw = salesFields.products  ? s.getCellValue(salesFields.products)  : null;
+                  const productsStr = Array.isArray(productsRaw) ? productsRaw.map((p) => p.name).join(', ') : '—';
+                  const totalDeal   = salesFields.totalDeal ? (Number(s.getCellValue(salesFields.totalDeal)) || 0) : 0;
+                  const totalPaid   = salesFields.totalPaid ? (Number(s.getCellValue(salesFields.totalPaid)) || 0) : 0;
+                  const fpRaw       = salesFields.fullyPaid ? s.getCellValue(salesFields.fullyPaid)  : null;
+                  const fullyPaid   = fpRaw === true || fpRaw === '✅' || fpRaw === 1;
+
+                  const salePayments = (paymentsFields?.projectLink ? (paymentsBySaleId.get(s.id) ?? []) : [])
+                    .sort((a, b) => {
+                      const na = paymentsFields.paymentNumber ? Number(a.getCellValue(paymentsFields.paymentNumber) ?? 0) : 0;
+                      const nb = paymentsFields.paymentNumber ? Number(b.getCellValue(paymentsFields.paymentNumber) ?? 0) : 0;
+                      return na - nb;
+                    });
+
+                  return (
+                    <div key={id} className="sale-block">
+                      <table className="sales-modal-table">
                         <thead>
                           <tr>
-                            <th>מספר תשלום</th>
-                            <th>סכום</th>
+                            <th>תאריך</th>
+                            <th>מוצרים</th>
+                            <th>סכום עסקה</th>
+                            <th>שולם</th>
                             <th>סטטוס</th>
-                            <th>תאריך יעד</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {sale.payments.map((p, i) => (
-                            <tr key={i}>
-                              <td>{p.num}</td>
-                              <td style={{ whiteSpace: 'nowrap' }}>₪{p.amount.toLocaleString('he-IL')}</td>
-                              <td>
-                                <span className={`payment-badge payment-badge--${p.status === 'שולם בפועל' ? 'paid' : 'pending'}`}>
-                                  {p.status}
-                                </span>
-                              </td>
-                              <td style={{ whiteSpace: 'nowrap', color: 'var(--gray-11)' }}>{p.dueDate}</td>
-                            </tr>
-                          ))}
+                          <tr>
+                            <td style={{ whiteSpace: 'nowrap' }}>{dateStr}</td>
+                            <td>{productsStr}</td>
+                            <td style={{ whiteSpace: 'nowrap', color: 'var(--amber-11)', fontWeight: 600 }}>
+                              {totalDeal ? `₪${totalDeal.toLocaleString('he-IL')}` : '—'}
+                            </td>
+                            <td style={{ whiteSpace: 'nowrap', color: 'var(--green-11)' }}>
+                              {totalPaid ? `₪${totalPaid.toLocaleString('he-IL')}` : '—'}
+                            </td>
+                            <td style={{ textAlign: 'center' }}>{fullyPaid ? '✅' : '—'}</td>
+                          </tr>
                         </tbody>
                       </table>
-                    ) : (
-                      <div style={{ padding: '8px 12px', color: 'var(--gray-9)', fontSize: '0.8rem', fontStyle: 'italic' }}>
-                        — אין פעימות תשלום —
-                      </div>
-                    )}
-                  </div>
-                ))
+                      {salePayments.length > 0 ? (
+                        <table className="payments-sub-table">
+                          <thead>
+                            <tr>
+                              <th>מספר תשלום</th>
+                              <th>סכום</th>
+                              <th>סטטוס</th>
+                              <th>תאריך יעד</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {salePayments.map((p, i) => {
+                              const num    = paymentsFields.paymentNumber ? String(p.getCellValue(paymentsFields.paymentNumber) ?? '—') : '—';
+                              const amt    = paymentsFields.amount   ? (p.getCellValue(paymentsFields.amount) ?? 0) : 0;
+                              const st     = paymentsFields.status   ? p.getCellValue(paymentsFields.status)?.name ?? '—' : '—';
+                              const due    = paymentsFields.dueDate  ? p.getCellValue(paymentsFields.dueDate) : null;
+                              const dueStr = due ? new Date(due).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—';
+                              return (
+                                <tr key={i}>
+                                  <td>{num}</td>
+                                  <td style={{ whiteSpace: 'nowrap' }}>₪{Number(amt).toLocaleString('he-IL')}</td>
+                                  <td>
+                                    <span className={`payment-badge payment-badge--${st === 'שולם בפועל' ? 'paid' : 'pending'}`}>
+                                      {st}
+                                    </span>
+                                  </td>
+                                  <td style={{ whiteSpace: 'nowrap', color: 'var(--gray-11)' }}>{dueStr}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <div style={{ padding: '8px 12px', color: 'var(--gray-9)', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                          — אין פעימות תשלום —
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>
