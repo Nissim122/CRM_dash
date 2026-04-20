@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, Text, Heading, Flex, Table } from '@radix-ui/themes';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
@@ -30,12 +30,98 @@ function getPeriodStart(period) {
   return new Date(now.getFullYear(), now.getMonth(), 1);
 }
 
+const STATUS_BADGE = {
+  'שולם בפועל': 'paid',
+};
+
+function PaymentsModal({ sale, payments, paymentsFields, customerName, salesFields, onClose }) {
+  const totalDeal = salesFields.totalDeal ? (Number(sale.getCellValue(salesFields.totalDeal)) || 0) : 0;
+  const totalPaid = salesFields.totalPaid ? (Number(sale.getCellValue(salesFields.totalPaid)) || 0) : 0;
+  const balance   = totalDeal - totalPaid;
+  const dateRaw   = salesFields.date ? sale.getCellValue(salesFields.date) : null;
+  const dateStr   = dateRaw ? new Date(dateRaw).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—';
+
+  return (
+    <div className="interactions-overlay" onClick={onClose}>
+      <div
+        className="interactions-modal"
+        style={{ width: 580, maxHeight: '82vh' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="interactions-modal__header">
+          <button className="interactions-modal__close" onClick={onClose}>✕</button>
+          <span className="interactions-modal__title">תשלומים — {customerName}</span>
+          <div style={{ width: 28 }} />
+        </div>
+
+        <div style={{
+          display: 'flex', gap: 28, padding: '10px 18px',
+          borderBottom: '1px solid var(--gray-5)',
+          fontSize: '0.82rem', color: 'var(--gray-11)',
+        }}>
+          <span>תאריך: <strong style={{ color: 'var(--gray-12)' }}>{dateStr}</strong></span>
+          <span>עסקה: <strong style={{ color: 'var(--amber-11)' }}>₪{totalDeal.toLocaleString('he-IL')}</strong></span>
+          <span>שולם: <strong style={{ color: 'var(--green-11)' }}>₪{totalPaid.toLocaleString('he-IL')}</strong></span>
+          {balance > 0 && (
+            <span>יתרה: <strong style={{ color: 'var(--red-11)' }}>₪{balance.toLocaleString('he-IL')}</strong></span>
+          )}
+        </div>
+
+        <div className="interactions-modal__body">
+          {payments.length === 0 ? (
+            <div style={{ padding: '32px', textAlign: 'center', color: 'var(--gray-9)', fontSize: '0.875rem' }}>
+              לא נמצאו תשלומים לעסקה זו
+            </div>
+          ) : (
+            <table className="payments-sub-table" style={{ fontSize: '0.875rem' }}>
+              <thead>
+                <tr>
+                  <th>מס׳</th>
+                  <th>סכום</th>
+                  <th>תאריך יעד</th>
+                  <th>סטטוס</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((p) => {
+                  const numRaw  = paymentsFields.paymentNumber ? p.getCellValue(paymentsFields.paymentNumber) : null;
+                  const num     = numRaw != null ? (typeof numRaw === 'object' ? (numRaw.name ?? '—') : numRaw) : null;
+                  const amount  = paymentsFields.amount  ? (Number(p.getCellValue(paymentsFields.amount)) || 0) : 0;
+                  const due     = paymentsFields.dueDate  ? p.getCellValue(paymentsFields.dueDate)  : null;
+                  const dueStr  = due ? new Date(due).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—';
+                  const st      = paymentsFields.status  ? p.getCellValue(paymentsFields.status)  : null;
+                  const stName  = st?.name ?? '—';
+                  const variant = STATUS_BADGE[stName] ?? 'pending';
+                  return (
+                    <tr key={p.id}>
+                      <td style={{ textAlign: 'center' }}>{num ?? '—'}</td>
+                      <td style={{ textAlign: 'center', color: 'var(--amber-11)', fontWeight: 600 }}>
+                        {amount ? `₪${amount.toLocaleString('he-IL')}` : '—'}
+                      </td>
+                      <td style={{ textAlign: 'center', color: 'var(--gray-10)' }}>{dueStr}</td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span className={`payment-badge payment-badge--${variant}`}>{stName}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function RevenueView({
   salesRecords, salesFields,
   paymentsRecords, paymentsFields,
   customersRecords, customersFields,
   period,
 }) {
+  const [selectedSale, setSelectedSale] = useState(null);
+
   const periodLabel = PERIOD_LABEL[period];
   const startDate = useMemo(() => getPeriodStart(period), [period]);
 
@@ -114,6 +200,32 @@ export default function RevenueView({
       { name: 'ממתין', value: pending },
     ];
   }, [paymentsRecords, paymentsFields]);
+
+  const paymentsBySaleId = useMemo(() => {
+    const map = new Map();
+    if (!paymentsFields?.projectLink) return map;
+    for (const p of (paymentsRecords ?? [])) {
+      const links = p.getCellValue(paymentsFields.projectLink) ?? [];
+      for (const link of links) {
+        if (!map.has(link.id)) map.set(link.id, []);
+        map.get(link.id).push(p);
+      }
+    }
+    return map;
+  }, [paymentsRecords, paymentsFields]);
+
+  const selectedSalePayments = useMemo(() => {
+    if (!selectedSale) return [];
+    return paymentsBySaleId.get(selectedSale.id) ?? [];
+  }, [selectedSale, paymentsBySaleId]);
+
+  const selectedCustomerName = useMemo(() => {
+    if (!selectedSale) return '—';
+    const custLinks = salesFields.customersLink ? (selectedSale.getCellValue(salesFields.customersLink) ?? []) : [];
+    const custRecord = custLinks[0] ? customersById.get(custLinks[0].id) : null;
+    const leadLinks = custRecord && customersFields?.lead ? custRecord.getCellValue(customersFields.lead) : null;
+    return leadLinks?.[0]?.name ?? custLinks[0]?.name ?? '—';
+  }, [selectedSale, salesFields, customersById, customersFields]);
 
   const salesInPeriod = useMemo(() => {
     return (salesRecords ?? [])
@@ -274,7 +386,13 @@ export default function RevenueView({
                 const customerName = leadLinks?.[0]?.name ?? custLinks[0]?.name ?? '—';
 
                 return (
-                  <Table.Row key={s.id}>
+                  <Table.Row
+                    key={s.id}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setSelectedSale(s)}
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === 'Enter' && setSelectedSale(s)}
+                  >
                     <Table.Cell>
                       <span className={`payment-badge payment-badge--${fullyPaid ? 'paid' : 'pending'}`}>
                         {fullyPaid ? 'שולם במלואו' : 'ממתין'}
@@ -315,6 +433,17 @@ export default function RevenueView({
           </Table.Root>
         </div>
       </div>
+
+      {selectedSale && (
+        <PaymentsModal
+          sale={selectedSale}
+          payments={selectedSalePayments}
+          paymentsFields={paymentsFields}
+          customerName={selectedCustomerName}
+          salesFields={salesFields}
+          onClose={() => setSelectedSale(null)}
+        />
+      )}
     </>
   );
 }

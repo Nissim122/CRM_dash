@@ -559,6 +559,15 @@
 /* Table cells — centered */
 th, td { text-align: center !important; }
 
+/* Clickable revenue rows */
+.table-wrapper tr[tabindex]:hover td {
+  background: var(--gray-3);
+}
+.table-wrapper tr[tabindex]:focus-visible {
+  outline: 2px solid var(--indigo-8);
+  outline-offset: -2px;
+}
+
 /* Inline cell edit inputs (appear inside table cells) */
 .cell-edit-select,
 .cell-edit-input {
