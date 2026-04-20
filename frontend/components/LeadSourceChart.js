@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Card, Text } from '@radix-ui/themes';
 import {
-  PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
 } from 'recharts';
 
 const SOURCE_COLORS = [
@@ -15,19 +15,6 @@ function getPeriodStart(period) {
   if (period === 'month') return new Date(now.getFullYear(), now.getMonth(), 1);
   if (period === 'year')  return new Date(now.getFullYear(), 0, 1);
   return null;
-}
-
-const RADIAN = Math.PI / 180;
-function renderCustomLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }) {
-  if (percent < 0.05) return null;
-  const r = innerRadius + (outerRadius - innerRadius) * 0.5;
-  const x = cx + r * Math.cos(-midAngle * RADIAN);
-  const y = cy + r * Math.sin(-midAngle * RADIAN);
-  return (
-    <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={600}>
-      {`${(percent * 100).toFixed(0)}%`}
-    </text>
-  );
 }
 
 export default function LeadSourceChart({ records, fields, period = 'month' }) {
@@ -62,50 +49,59 @@ export default function LeadSourceChart({ records, fields, period = 'month' }) {
           {!fields.leadSource ? 'שדה "מקור ליד" לא נמצא' : 'אין נתונים לתקופה זו'}
         </div>
       ) : (
-        <div className="chart-container" style={{ marginTop: 16, position: 'relative' }}>
-          <ResponsiveContainer width="100%" height={220}>
-            <PieChart>
-              <Pie
-                data={data}
-                cx="50%"
-                cy="50%"
-                innerRadius={55}
-                outerRadius={85}
-                dataKey="value"
-                labelLine={false}
-                label={renderCustomLabel}
-              >
-                {data.map((_, i) => (
-                  <Cell key={i} fill={SOURCE_COLORS[i % SOURCE_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  background: 'var(--color-panel-solid)',
-                  border: '1px solid var(--gray-6)',
-                  borderRadius: 8,
-                  color: 'var(--gray-12)',
-                  direction: 'rtl',
-                }}
-                formatter={(value, name) => [`${value} (${((value / total) * 100).toFixed(1)}%)`, name]}
-              />
-              <Legend
-                iconType="circle"
-                iconSize={8}
-                wrapperStyle={{ fontSize: 11, color: 'var(--gray-11)', paddingTop: 4 }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -68%)',
-            textAlign: 'center',
-            pointerEvents: 'none',
-          }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--gray-12)' }}>{total}</div>
-            <div style={{ fontSize: 10, color: 'var(--gray-9)' }}>לידים</div>
+        <div className="chart-container" style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: 16 }}>
+          <div style={{ flex: '0 0 auto', position: 'relative', width: 180, height: 220 }}>
+            <ResponsiveContainer width={180} height={220}>
+              <PieChart>
+                <Pie
+                  data={data}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={55}
+                  outerRadius={85}
+                  dataKey="value"
+                  labelLine={false}
+                  label={false}
+                >
+                  {data.map((_, i) => (
+                    <Cell key={i} fill={SOURCE_COLORS[i % SOURCE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    background: 'var(--color-panel-solid)',
+                    border: '1px solid var(--gray-6)',
+                    borderRadius: 8,
+                    color: 'var(--gray-12)',
+                    direction: 'rtl',
+                  }}
+                  formatter={(value, name) => [`${value} (${((value / total) * 100).toFixed(1)}%)`, name]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              textAlign: 'center',
+              pointerEvents: 'none',
+            }}>
+              <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--gray-12)' }}>{total}</div>
+              <div style={{ fontSize: 10, color: 'var(--gray-9)' }}>לידים</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', direction: 'rtl' }}>
+            {data.map((entry, i) => {
+              const pct = total > 0 ? Math.round((entry.value / total) * 100) : 0;
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: SOURCE_COLORS[i % SOURCE_COLORS.length], flexShrink: 0 }} />
+                  <span style={{ color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600 }}>{entry.name}</span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{pct}%</span>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

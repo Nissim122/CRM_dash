@@ -313,31 +313,44 @@ export default function RevenueView({
 
         <Card className="chart-section">
           <Text size="4" weight="bold">סטטוס תשלומים</Text>
-          <div className="chart-container">
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie
-                  data={paymentStatusData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={52}
-                  outerRadius={82}
-                  dataKey="value"
-                  label={({ name, percent }) =>
-                    percent > 0.04 ? `${name} ${Math.round(percent * 100)}%` : ''
-                  }
-                  labelLine={false}
-                >
-                  {paymentStatusData.map((_, i) => (
-                    <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  {...tooltipStyle}
-                  formatter={(v) => [`₪${Number(v).toLocaleString('he-IL')}`]}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className="chart-container" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ flex: '0 0 auto', position: 'relative', width: 180, height: 220 }}>
+              <ResponsiveContainer width={180} height={220}>
+                <PieChart>
+                  <Pie
+                    data={paymentStatusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={52}
+                    outerRadius={82}
+                    dataKey="value"
+                    label={false}
+                    labelLine={false}
+                  >
+                    {paymentStatusData.map((_, i) => (
+                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    {...tooltipStyle}
+                    formatter={(v) => [`₪${Number(v).toLocaleString('he-IL')}`]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', direction: 'rtl' }}>
+              {paymentStatusData.map((entry, i) => {
+                const total = paymentStatusData.reduce((s, d) => s + d.value, 0);
+                const pct = total > 0 ? Math.round((entry.value / total) * 100) : 0;
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: 12, height: 12, borderRadius: '50%', background: PIE_COLORS[i % PIE_COLORS.length], flexShrink: 0 }} />
+                    <span style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600 }}>{entry.name}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>{pct}%</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </Card>
       </div>
