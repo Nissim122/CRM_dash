@@ -3,6 +3,7 @@ import { Card, Text, Heading, Flex, Table, Badge, Callout } from '@radix-ui/them
 import { globalConfig } from '@airtable/blocks';
 import { useGlobalConfig } from '@airtable/blocks/ui';
 import RevenueBarChart from './RevenueBarChart';
+import ProjectStatusChart from './ProjectStatusChart';
 
 function getSelectChoices(field) {
   return field?.options?.choices?.map((c) => c.name) ?? [];
@@ -357,6 +358,7 @@ export default function CustomersView({
 
       <div className="analytics-row">
         <RevenueBarChart salesRecords={salesRecords} salesFields={salesFields} paymentsRecords={paymentsRecords ?? []} paymentsFields={paymentsFields} period={period} />
+        <ProjectStatusChart customersRecords={customersRecords} customersFields={customersFields} />
       </div>
 
       <div className="ops-layout">
