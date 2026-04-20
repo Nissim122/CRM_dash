@@ -41,7 +41,7 @@
   background: var(--gray-3);
   border-radius: var(--radius-2);
   padding: 3px;
-  max-width: 240px;
+  max-width: 340px;
   margin: 0 auto;
 }
 .nav-btn {
@@ -50,7 +50,7 @@
   border: none;
   color: var(--gray-10);
   border-radius: calc(var(--radius-2) - 2px);
-  padding: 6px 20px;
+  padding: 6px 12px;
   cursor: pointer;
   font-size: 0.88rem;
   font-weight: 500;

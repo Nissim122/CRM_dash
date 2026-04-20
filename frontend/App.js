@@ -10,6 +10,7 @@ import LeadSourceChart from './components/LeadSourceChart';
 import OperationalTable from './components/OperationalTable';
 import CustomersView from './components/CustomersView';
 import ZoomMeetingsView from './components/ZoomMeetingsView';
+import RevenueView from './components/RevenueView';
 import './styles.css';
 
 const PERIODS = [
@@ -23,6 +24,7 @@ const VIEWS = [
   { key: 'leads',     label: 'לידים' },
   { key: 'customers', label: 'לקוחות' },
   { key: 'meetings',  label: 'פגישות זום' },
+  { key: 'revenue',   label: 'הכנסות' },
 ];
 
 export default function App() {
@@ -78,6 +80,11 @@ export default function App() {
   const salesFields = useMemo(() => {
     if (!salesTable) return {};
     const f = (name) => salesTable.getFieldByNameIfExists(name);
+    const customersLink = customersTable
+      ? (salesTable.fields.find(
+          (field) => field.type === 'multipleRecordLinks' && field.options?.linkedTableId === customersTable.id
+        ) ?? null)
+      : null;
     return {
       price:      f('מחיר (from מחיר)'),
       date:       f('תאריך'),
@@ -85,10 +92,10 @@ export default function App() {
       totalDeal:     f('סכום עסקה כולל'),
       totalPaid:     f('סך הכל שולם') ?? f('תשלום כולל') ?? f('סה"כ שולם'),
       fullyPaid:     f('שולם במלואו ?') ?? f('שולם במלואו?'),
-      customersLink: f('לקוחות'),
+      customersLink,
       leadsLink:     f('לידים') ?? f('ליד'),
     };
-  }, [salesTable]);
+  }, [salesTable, customersTable]);
 
   const paymentsFields = useMemo(() => {
     if (!paymentsTable) return {};
@@ -216,6 +223,18 @@ export default function App() {
             meetingsRecords={meetingsRecords}
             meetingsTable={meetingsTable}
             leadsRecords={records}
+            period={period}
+          />
+        )}
+
+        {activeView === 'revenue' && (
+          <RevenueView
+            salesRecords={salesRecords}
+            salesFields={salesFields}
+            paymentsRecords={paymentsRecords ?? []}
+            paymentsFields={paymentsFields}
+            customersRecords={customersRecords}
+            customersFields={customersFields}
             period={period}
           />
         )}
