@@ -2,8 +2,10 @@ const BASE_ID = 'appdDL145oWw1E2qs';
 const API_BASE = `https://api.airtable.com/v0/${BASE_ID}`;
 const META_URL = `https://api.airtable.com/v0/meta/bases/${BASE_ID}/tables`;
 
+const ENV_TOKEN = import.meta.env.VITE_AIRTABLE_TOKEN ?? '';
+
 export function getToken() {
-  return localStorage.getItem('airtable_token') ?? '';
+  return localStorage.getItem('airtable_token') || ENV_TOKEN;
 }
 
 export function saveToken(t) {
