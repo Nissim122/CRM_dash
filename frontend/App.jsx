@@ -339,12 +339,6 @@ export default function App() {
               onClick={toggleFullscreen}
               title={isFullscreen ? 'צא ממסך מלא' : 'מסך מלא'}
             >⛶</button>
-            <button
-              className="fullscreen-btn"
-              onClick={() => { clearToken(); setToken(''); }}
-              title="התנתק"
-              style={{ fontSize: '0.75rem' }}
-            >⏏</button>
           </div>
         </header>
 
