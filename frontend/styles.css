@@ -623,6 +623,33 @@ html, body {
 /* Table cells — centered */
 th, td { text-align: center !important; }
 
+/* Sticky columns in leads table */
+.col-sticky-right {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background: #fff;
+}
+.col-sticky-left {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #fff;
+}
+th.col-sticky-right,
+th.col-sticky-left {
+  background: var(--gray-2, #f9fafb);
+  z-index: 3;
+}
+/* shadow hints to signal sticky edge */
+.col-sticky-right { box-shadow: -3px 0 6px rgba(14,22,40,0.06); }
+.col-sticky-left  { box-shadow:  3px 0 6px rgba(14,22,40,0.06); }
+/* highlighted rows — sticky cells inherit the row bg */
+tr[style] td.col-sticky-right,
+tr[style] td.col-sticky-left {
+  background: inherit;
+}
+
 /* Clickable revenue rows */
 .table-wrapper tr[tabindex]:hover td {
   background: #f4f8fa;

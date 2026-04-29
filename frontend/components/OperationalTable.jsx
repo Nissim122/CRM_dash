@@ -562,7 +562,7 @@ export default function OperationalTable({ records, fields, table, interactionsT
           <Table.Root variant="surface">
             <Table.Header>
               <Table.Row>
-                <Table.ColumnHeaderCell style={{ width: 40 }}></Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell className="col-sticky-right" style={{ width: 40 }}></Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>הצעת עבודה</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>הצעה נשלחה בתאריך</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>תאריך יצירה</Table.ColumnHeaderCell>
@@ -575,7 +575,7 @@ export default function OperationalTable({ records, fields, table, interactionsT
                 <Table.ColumnHeaderCell>אינטרקציות</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>סטטוס</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>שם</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell style={{ width: 36 }}></Table.ColumnHeaderCell>
+                <Table.ColumnHeaderCell className="col-sticky-left" style={{ width: 36 }}></Table.ColumnHeaderCell>
               </Table.Row>
             </Table.Header>
             <Table.Body>
@@ -632,7 +632,7 @@ export default function OperationalTable({ records, fields, table, interactionsT
                     }}
                   >
                     {/* WhatsApp */}
-                    <Table.Cell>
+                    <Table.Cell className="col-sticky-right">
                       {waUrl ? (
                         <a href={waUrl} target="_blank" rel="noopener noreferrer" className="whatsapp-btn" title="פתח וואטסאפ">
                           <svg viewBox="0 0 32 32" width="28" height="28" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -864,7 +864,7 @@ export default function OperationalTable({ records, fields, table, interactionsT
                     </Table.Cell>
 
                     {/* עריכה */}
-                    <Table.Cell>
+                    <Table.Cell className="col-sticky-left">
                       {isExpanded ? (
                         <Flex direction="column" gap="1" align="center">
                           <button
