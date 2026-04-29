@@ -236,7 +236,7 @@ export default function FollowupsView({
             <Table.Root variant="surface">
               <Table.Header>
                 <Table.Row>
-                  <Table.ColumnHeaderCell>WA</Table.ColumnHeaderCell>
+                  <Table.ColumnHeaderCell>WhatsApp</Table.ColumnHeaderCell>
                   <Table.ColumnHeaderCell>טלפון</Table.ColumnHeaderCell>
                   <Table.ColumnHeaderCell>סטטוס</Table.ColumnHeaderCell>
                   <Table.ColumnHeaderCell>✓ ראשון</Table.ColumnHeaderCell>
@@ -314,7 +314,7 @@ export default function FollowupsView({
                             rel="noopener noreferrer"
                             className="whatsapp-btn whatsapp-btn--sm"
                           >
-                            WA
+                            WhatsApp
                           </a>
                         ) : (
                           <Text color="gray" size="1">—</Text>
