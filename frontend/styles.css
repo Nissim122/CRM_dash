@@ -229,9 +229,12 @@ html, body {
   border: 1px solid var(--gray-4);
   border-radius: var(--radius-3);
   box-shadow: 0 1px 3px rgba(14,22,40,0.06);
+  min-width: 0;
+  overflow: hidden;
 }
 .table-wrapper {
   overflow-x: auto;
+  width: 100%;
 }
 
 /* Presets Sidebar */
