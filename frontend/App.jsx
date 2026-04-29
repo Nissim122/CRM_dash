@@ -83,6 +83,7 @@ export default function App() {
   const [period, setPeriod]             = useState('all');
   const [activeView, setActiveView]     = useState('leads');
   const [refreshTick, setRefreshTick]   = useState(0);
+  const [refreshing, setRefreshing]     = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -125,9 +126,13 @@ export default function App() {
           interactions: interactions.map(wrapRecord),
         });
         setLoading(false);
+        setRefreshing(false);
         setError(null);
       } catch (err) {
-        if (!cancelled) setError(err.message);
+        if (!cancelled) {
+          setError(err.message);
+          setRefreshing(false);
+        }
       }
     }
 
@@ -325,9 +330,10 @@ export default function App() {
             </div>
             <button
               className="fullscreen-btn"
-              onClick={() => setRefreshTick(t => t + 1)}
+              onClick={() => { setRefreshing(true); setRefreshTick(t => t + 1); }}
               title="רענן נתונים"
-            >↻</button>
+              disabled={refreshing}
+            ><span className={refreshing ? 'spin' : ''}>↻</span></button>
             <button
               className="fullscreen-btn"
               onClick={toggleFullscreen}

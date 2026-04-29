@@ -22,11 +22,17 @@
 /* Layout */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 .app {
   min-height: 100vh;
   background: #f4f7f9;
   padding: 20px 16px 40px;
   max-width: 100%;
+  overflow-x: hidden;
   margin: 0 auto;
 }
 
@@ -34,13 +40,15 @@
 .app-header {
   display: flex;
   align-items: center;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-bottom: 28px;
   background: #fff;
   border-radius: 12px;
   padding: 12px 20px;
   box-shadow: 0 1px 4px rgba(14,22,40,0.08), 0 4px 16px rgba(33,150,176,0.08);
   border-bottom: 3px solid var(--clixx-8);
+  min-width: 0;
 }
 .header-brand {
   display: flex;
@@ -61,9 +69,11 @@
 
 /* Main Nav */
 .main-nav {
-  flex: 1;
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 4px;
   background: #f0f4f6;
   border-radius: 8px;
@@ -106,7 +116,8 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 .fullscreen-btn {
   background: none;
@@ -124,6 +135,7 @@
 }
 .period-switcher {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   background: #f0f4f6;
   border-radius: 8px;
@@ -167,13 +179,14 @@
   box-shadow: 0 1px 3px rgba(14,22,40,0.06), 0 4px 12px rgba(14,22,40,0.06) !important;
 }
 
-/* Analytics row — 3-column grid housing charts */
+/* Analytics row — responsive 3-column grid */
 .analytics-row {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: 14px;
   margin-bottom: 28px;
   direction: rtl;
+  min-width: 0;
 }
 .analytics-row .chart-section {
   margin-bottom: 0 !important;
@@ -201,6 +214,8 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  min-width: 0;
+  overflow: hidden;
 }
 .ops-layout .ops-section {
   flex: 1;
@@ -980,6 +995,16 @@ th, td { text-align: center !important; }
   padding: 3px 10px;
   font-size: 0.82rem;
   font-weight: 600;
+}
+
+/* Refresh spin animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.spin {
+  display: inline-block;
+  animation: spin 0.7s linear infinite;
 }
 
 /* Error */
