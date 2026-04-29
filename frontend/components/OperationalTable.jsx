@@ -88,7 +88,6 @@ export default function OperationalTable({ records, fields, table, interactionsT
   const [presetName,      setPresetName]      = useState('');
   const [tick,            setTick]            = useState(0);
   const [activePresetId,  setActivePresetId]  = useState(null);
-  const [uploadingIds,    setUploadingIds]    = useState(new Set());
   const [togglingMsgIds,  setTogglingMsgIds]  = useState(new Set());
 
   const expandedPanelRef = useRef(null);
@@ -649,61 +648,21 @@ export default function OperationalTable({ records, fields, table, interactionsT
                     <Table.Cell>
                       {(() => {
                         const attachments = fields.proposalFile ? record.getCellValue(fields.proposalFile) : null;
-                        const isUploading = uploadingIds.has(record.id);
-                        const handleUpload = async (e) => {
-                          const file = e.target.files[0];
-                          if (!file || !fields.proposalFile || isUploading) return;
-                          e.target.value = '';
-                          const reader = new FileReader();
-                          reader.onload = async (ev) => {
-                            setUploadingIds((prev) => new Set(prev).add(record.id));
-                            try {
-                              const existing = (attachments || []).map((a) => ({ url: a.url }));
-                              await table.updateRecordAsync(record, {
-                                [fields.proposalFile.name]: [...existing, { url: ev.target.result, filename: file.name }],
-                              });
-                            } catch (err) {
-                              setSaveError('שגיאה בהעלאת קובץ: ' + err.message);
-                            } finally {
-                              setUploadingIds((prev) => { const s = new Set(prev); s.delete(record.id); return s; });
-                            }
-                          };
-                          reader.readAsDataURL(file);
-                        };
+                        if (!attachments || attachments.length === 0) return <Text color="gray" size="1">—</Text>;
                         return (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 90 }}>
-                            {attachments && attachments.length > 0 ? (
-                              attachments.map((att) => (
-                                <a
-                                  key={att.id}
-                                  href={att.url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  title={att.filename}
-                                  style={{ color: 'var(--indigo-11)', fontSize: 11, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 100, display: 'block' }}
-                                >
-                                  {att.filename}
-                                </a>
-                              ))
-                            ) : (
-                              !isExpanded && <Text color="gray" size="1">—</Text>
-                            )}
-                            {isExpanded && (
-                              <label style={{ cursor: isUploading ? 'default' : 'pointer', marginTop: 2 }}>
-                                <input type="file" style={{ display: 'none' }} disabled={isUploading} onChange={handleUpload} />
-                                <span style={{
-                                  fontSize: 11,
-                                  color: isUploading ? 'var(--gray-9)' : 'var(--indigo-11)',
-                                  border: `1px dashed ${isUploading ? 'var(--gray-7)' : 'var(--indigo-7)'}`,
-                                  borderRadius: 4,
-                                  padding: '2px 6px',
-                                  display: 'inline-block',
-                                  opacity: isUploading ? 0.6 : 1,
-                                }}>
-                                  {isUploading ? 'מעלה…' : '+ העלה קובץ'}
-                                </span>
-                              </label>
-                            )}
+                            {attachments.map((att) => (
+                              <a
+                                key={att.id}
+                                href={att.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                title={att.filename}
+                                style={{ color: 'var(--indigo-11)', fontSize: 11, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 100, display: 'block' }}
+                              >
+                                {att.filename}
+                              </a>
+                            ))}
                           </div>
                         );
                       })()}

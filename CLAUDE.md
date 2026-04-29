@@ -1,4 +1,4 @@
-# CLAUDE.md — BillsAI Executive Cockpit (Airtable Extension)
+# CLAUDE.md — BillsAI Executive Cockpit (Standalone Web App)
 
 ## Project Overview
 **"מרכז שליטה למנכ"ל"** — ממשק עבודה חכם שמחליף עבודה ישירה מול טבלאות Airtable.
@@ -6,29 +6,39 @@
 - **שכבת תובנות (Analytics):** מבט-על של ביצועי העסק — לידים, סגירות, מגמות.
 - **שכבת תפעול (Operations):** ניהול שוטף של לידים בטבלה אינטראקטיבית.
 
-זוהי **Airtable Extension** — React app שרץ בתוך סביבת Airtable. **אין backend, אין router, אין שרת חיצוני.**
+זהו **אתר עצמאי** — React app שרץ בדפדפן, מתקשר עם Airtable דרך REST API. **אין backend, אין router, אין שרת חיצוני.**
 
 ## Tech Stack
-- **Runtime:** Airtable Blocks SDK v2 (`@airtable/blocks`, `@airtable/blocks/ui`)
-- **UI:** React 17
+- **Build:** Vite 5
+- **UI:** React 18 + Radix UI Themes (`@radix-ui/themes`)
 - **Charts:** Recharts
 - **Styles:** Plain CSS (`frontend/styles.css`) — no Tailwind, no CSS-in-JS
-- **Entry point:** `frontend/index.js` → `initializeBlock(() => <App />)` (import from `@airtable/blocks/ui`)
+- **Entry point:** `frontend/index.jsx` → `createRoot(document.getElementById('root')).render(<App />)`
+- **API:** Airtable REST API — `https://api.airtable.com/v0/{baseId}` + Personal Access Token (PAT)
+- **Auth:** PAT נשמר ב-`localStorage`; fallback ל-`VITE_AIRTABLE_TOKEN` env var
 
 ## Project IDs
 - **Base ID:** `appdDL145oWw1E2qs`
-- **Block ID:** `blkOgY7KAxhNSPFQm`
 
 ## Project Structure
 ```
+index.html               — entry HTML
 frontend/
-  index.js               — entry point
-  App.js                 — root component, loads 3 tables
-  styles.css             — global dark-mode RTL styles
+  index.jsx              — entry point (React 18 createRoot)
+  App.jsx                — root component, loads 7 tables
+  styles.css             — global RTL styles + CSS variables
+  api/
+    client.js            — Airtable REST API client (getToken, fetchAllRecords, wrapRecord, buildTableObj)
   components/
-    KpiBar.js            — 5 KPI cards (this month)
-    TrendChart.js        — 30-day line chart (Recharts)
-    OperationalTable.js  — inline-edit table with WhatsApp button
+    KpiBar.jsx           — 5 KPI cards
+    TrendChart.jsx       — line chart (Recharts)
+    LeadFunnel.jsx       — funnel chart
+    LeadSourceChart.jsx  — source breakdown chart
+    OperationalTable.jsx — inline-edit leads table with WhatsApp button
+    CustomersView.jsx    — customers + sales + payments
+    ZoomMeetingsView.jsx — zoom meetings timeline
+    RevenueView.jsx      — revenue charts + sales table
+    FollowupsView.jsx    — follow-up management
 ```
 
 ## Airtable Tables & Fields (verified via API)
@@ -116,16 +126,16 @@ frontend/
 - **Badge "חדש!":** ליד בן פחות מ-24 שעות → הדגשת שורה + תג
 
 ## Always Do First
-- כל כתיבה דרך `table.updateRecordAsync()` בלבד.
-- `useRecords(table)` לרשימות חיות (מתרענן אוטומטית).
-- `useBase()` → `base.getTableByNameIfExists('שם הטבלה')`.
-- App.js טוען 3 טבלאות: `לידים`, `מכירות`, `פגישות בזום`.
+- כל כתיבה דרך `table.updateRecordAsync(record, { [field.name]: value })` בלבד — שולח PATCH ל-REST API.
+- נתונים נטענים ב-`App.jsx` דרך `fetchAllRecords()` ומועברים כ-props; אין hooks חיים.
+- רשומות עטופות ב-`wrapRecord()` — משתמש ב-`getCellValue(field)` ו-`getCellValueAsString(field)`.
+- `App.jsx` טוען 7 טבלאות: `לידים`, `מכירות`, `פגישות בזום`, `לקוחות`, `תשלומים`, `פולואפים`, `אינטרקציות`.
 
 ## UI Rules
 - **RTL תמיד:** `dir="rtl"` על root. חריג יחיד: `.chart-container { direction: ltr }`.
 - **Dark theme:** CSS variables ב-`:root` — `--bg-base`, `--bg-elevated`, `--bg-floating`, `--border`, `--text-primary`, `--text-muted`. אין hex בקומפוננטות.
 - **אין emojis בלוגיקה** — רק בטקסטים לתצוגה.
-- **Accent:** `#6366f1`. צבעי סטטוס ב-`OperationalTable.js:STATUS_COLORS`.
+- **Accent:** `#6366f1`. צבעי סטטוס ב-`OperationalTable.jsx:STATUS_COLORS`.
 
 ## Business Logic Rules
 - **Active statuses** (table default filter): `נוצר קשר`, `לא נוצר קשר`, `שיתוף פעולה`
@@ -137,12 +147,13 @@ frontend/
 ## Running Locally
 ```bash
 npm install
-npm start   # runs: block run
+npm run dev   # Vite dev server — http://localhost:5173
+npm run build # production build → dist/
 ```
-נדרש: `@airtable/blocks-cli` גלובלי. בטרמינל PowerShell: `cmd /c npm start`.
+בטרמינל PowerShell: `cmd /c npm run dev`.
 
 ## Hard Rules
-- אין backend, REST API, או DB מחוץ ל-Airtable.
+- אין backend או DB מחוץ ל-Airtable — כל הנתונים דרך REST API.
 - אין `transition-all` ב-CSS.
 - אין הוספת פיצ'רים מעבר לאפיון ללא אישור.
 - אין שימוש ב-`record.id` כטקסט תצוגה.

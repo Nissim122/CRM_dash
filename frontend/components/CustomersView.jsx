@@ -103,16 +103,6 @@ export default function CustomersView({
     return () => document.removeEventListener('keydown', handleKey);
   }, [salesModal]);
 
-  useEffect(() => {
-    if (!customersRecords.length) return;
-    const first = customersRecords[0];
-    const linked = customersFields.salesLink ? first.getCellValue(customersFields.salesLink) : 'FIELD NULL';
-    console.log('[DEBUG-CV] salesRec:', salesRecords?.length ?? 'NULL',
-      '| salesLink field:', customersFields.salesLink?.name ?? 'NULL',
-      '| first cust salesLinks:', linked,
-      '| salesById size:', salesRecordsById.size);
-  }, [customersRecords, salesRecords, customersFields, salesRecordsById]);
-
   function openSalesModal(record) {
     const leadLinks    = customersFields.lead ? record.getCellValue(customersFields.lead) : null;
     const customerName = leadsById.get(leadLinks?.[0]?.id)?.name ?? '—';
