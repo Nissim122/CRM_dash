@@ -218,8 +218,9 @@ export default function OperationalTable({ records, fields, table, interactionsT
     if (filters.minScore) {
       const min = Number(filters.minScore);
       base = base.filter((r) => {
-        const score = fields.score ? (r.getCellValue(fields.score) ?? 0) : 0;
-        return Number(score) >= min;
+        const raw = fields.score ? r.getCellValue(fields.score) : null;
+        const score = Array.isArray(raw) ? raw.reduce((s, x) => s + (Number(x) || 0), 0) : (Number(raw) || 0);
+        return score >= min;
       });
     }
     if (filters.dateRange !== 'all') {
@@ -597,7 +598,8 @@ export default function OperationalTable({ records, fields, table, interactionsT
                 const source     = fields.leadSource  ? record.getCellValue(fields.leadSource)?.name  : null;
                 const dealVal    = fields.dealValue   ? record.getCellValue(fields.dealValue)         : null;
                 const name         = fields.name         ? record.getCellValue(fields.name)              : record.name;
-                const score        = fields.score        ? record.getCellValue(fields.score)              : null;
+                const scoreRaw     = fields.score        ? record.getCellValue(fields.score)              : null;
+                const score        = Array.isArray(scoreRaw) ? scoreRaw.reduce((s, x) => s + (Number(x) || 0), 0) : scoreRaw;
                 const interactions = fields.interactions ? record.getCellValue(fields.interactions)       : null;
                 const messageSent  = fields.messageSent  ? record.getCellValue(fields.messageSent)        : null;
                 const waUrl        = buildWhatsAppUrl(phone);
