@@ -126,10 +126,10 @@ export default function TrendChart({ records, fields, period = 'month' }) {
             <Line
               type="monotone"
               dataKey="לידים"
-              stroke="var(--indigo-9)"
+              stroke="#2196b0"
               strokeWidth={2.5}
               dot={period === 'week' ? true : false}
-              activeDot={{ r: 5, fill: 'var(--indigo-9)' }}
+              activeDot={{ r: 5, fill: '#2196b0' }}
             />
           </LineChart>
         </ResponsiveContainer>

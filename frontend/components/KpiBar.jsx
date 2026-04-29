@@ -11,7 +11,7 @@ const CLOSED_STATUS  = 'נרשם כלקוח';
 const ACTIVE_STATUSES = ['נוצר קשר', 'לא נוצר קשר'];
 
 const CARD_META = {
-  leads:       { color: '#6366f1', icon: '📥' },
+  leads:       { color: '#2196b0', icon: '📥' },
   closed:      { color: '#10b981', icon: '✅' },
   conversion:  { color: '#f59e0b', icon: '📊' },
   active:      { color: '#ef4444', icon: '🔔' },

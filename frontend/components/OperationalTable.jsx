@@ -2,8 +2,6 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Table, Badge, Button, Text, Flex, Callout, TextField,
 } from '@radix-ui/themes';
-import { globalConfig } from '@airtable/blocks';
-import { useGlobalConfig } from '@airtable/blocks/ui';
 
 const PRESETS_KEY = 'filterPresets_leads';
 
@@ -104,8 +102,9 @@ export default function OperationalTable({ records, fields, table, interactionsT
   useEffect(() => { origRef.current         = origValues;   }, [origValues]);
   useEffect(() => { expandedRowRef.current  = expandedRow;  }, [expandedRow]);
 
-  const gConfig = useGlobalConfig();
-  const presets = gConfig.get(PRESETS_KEY) ?? [];
+  const [presets, setPresetsState] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(PRESETS_KEY) ?? '[]'); } catch { return []; }
+  });
 
   const [interactionsModal,   setInteractionsModal]   = useState(null);
   const [interactionDetailId, setInteractionDetailId] = useState(null);
@@ -145,17 +144,21 @@ export default function OperationalTable({ records, fields, table, interactionsT
     return () => document.removeEventListener('mousedown', handleDocMouseDown);
   }, [expandedRow, showSaveConfirm]);
 
-  async function savePreset() {
+  function savePreset() {
     const name = presetName.trim();
     if (!name) return;
     const entry = { id: String(Date.now()), name, filters: { ...filters } };
-    await globalConfig.setAsync(PRESETS_KEY, [...presets, entry]);
+    const next = [...presets, entry];
+    localStorage.setItem(PRESETS_KEY, JSON.stringify(next));
+    setPresetsState(next);
     setPresetName('');
     setShowSaveInput(false);
   }
 
-  async function deletePreset(id) {
-    await globalConfig.setAsync(PRESETS_KEY, presets.filter((p) => p.id !== id));
+  function deletePreset(id) {
+    const next = presets.filter((p) => p.id !== id);
+    localStorage.setItem(PRESETS_KEY, JSON.stringify(next));
+    setPresetsState(next);
   }
 
   function applyPreset(preset) {

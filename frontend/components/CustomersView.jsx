@@ -1,7 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Card, Text, Heading, Flex, Table, Badge, Callout } from '@radix-ui/themes';
-import { globalConfig } from '@airtable/blocks';
-import { useGlobalConfig } from '@airtable/blocks/ui';
 import RevenueBarChart from './RevenueBarChart';
 import ProjectStatusChart from './ProjectStatusChart';
 
@@ -26,7 +24,7 @@ function getPeriodStart(period) {
 }
 
 const CARD_META = {
-  total:   { color: '#6366f1', icon: '👥' },
+  total:   { color: '#2196b0', icon: '👥' },
   revenue: { color: '#f59e0b', icon: '💰' },
   sales:   { color: '#10b981', icon: '🛒' },
 };
@@ -117,7 +115,7 @@ export default function CustomersView({
 
   function openSalesModal(record) {
     const leadLinks    = customersFields.lead ? record.getCellValue(customersFields.lead) : null;
-    const customerName = leadLinks?.[0]?.name ?? '—';
+    const customerName = leadsById.get(leadLinks?.[0]?.id)?.name ?? '—';
     const salesLinks   = customersFields.salesLink
       ? (record.getCellValue(customersFields.salesLink) ?? [])
       : [];
@@ -125,8 +123,9 @@ export default function CustomersView({
     setSalesModal({ customerName, linkedIds });
   }
 
-  const gConfig = useGlobalConfig();
-  const presets  = gConfig.get(PRESETS_KEY) ?? [];
+  const [presets, setPresetsState] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(PRESETS_KEY) ?? '[]'); } catch { return []; }
+  });
 
   const activeFilterCount = (filters.search ? 1 : 0) + (filters.minRevenue ? 1 : 0)
     + (filters.projectStatus ? 1 : 0) + (filters.leadSource ? 1 : 0);
@@ -134,17 +133,21 @@ export default function CustomersView({
   function setFilter(key, val) { setActivePresetId(null); setFilters((f) => ({ ...f, [key]: val })); }
   function resetFilters()      { setActivePresetId(null); setFilters(EMPTY_FILTERS); }
 
-  async function savePreset() {
+  function savePreset() {
     const name = presetName.trim();
     if (!name) return;
     const entry = { id: String(Date.now()), name, filters: { ...filters } };
-    await globalConfig.setAsync(PRESETS_KEY, [...presets, entry]);
+    const next = [...presets, entry];
+    localStorage.setItem(PRESETS_KEY, JSON.stringify(next));
+    setPresetsState(next);
     setPresetName('');
     setShowSaveInput(false);
   }
 
-  async function deletePreset(id) {
-    await globalConfig.setAsync(PRESETS_KEY, presets.filter((p) => p.id !== id));
+  function deletePreset(id) {
+    const next = presets.filter((p) => p.id !== id);
+    localStorage.setItem(PRESETS_KEY, JSON.stringify(next));
+    setPresetsState(next);
   }
 
   function applyPreset(preset) {
@@ -295,7 +298,7 @@ export default function CustomersView({
       const q = filters.search.toLowerCase();
       base = base.filter((r) => {
         const leadLinks = customersFields.lead ? r.getCellValue(customersFields.lead) : null;
-        const name = leadLinks?.[0]?.name ?? '';
+        const name = leadsById.get(leadLinks?.[0]?.id)?.name ?? '';
         return name.toLowerCase().includes(q);
       });
     }
