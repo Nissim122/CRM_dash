@@ -647,11 +647,14 @@ export default function OperationalTable({ records, fields, table, interactionsT
                   ? new Date(createdRaw).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' })
                   : '—';
                 const dealDisplay = dealVal != null ? `₪${Number(dealVal).toLocaleString('he-IL')}` : '—';
-                const responseWaitMin = fields.responseWait ? record.getCellValue(fields.responseWait) : null;
+                const responseWaitRaw = fields.responseWait ? record.getCellValue(fields.responseWait) : null;
                 let waitDisplay = '—';
                 let waitColor = 'gray';
-                if (responseWaitMin != null && responseWaitMin > 0) {
-                  waitDisplay = formatMinutes(responseWaitMin) + ' ✓';
+                if (responseWaitRaw != null && responseWaitRaw !== '') {
+                  // formula returns a pre-formatted string like "19 דקות"
+                  waitDisplay = typeof responseWaitRaw === 'number'
+                    ? formatMinutes(responseWaitRaw) + ' ✓'
+                    : String(responseWaitRaw) + ' ✓';
                   waitColor = 'green';
                 } else if (status === 'לא נוצר קשר') {
                   const cr = fields.createdTime ? record.getCellValue(fields.createdTime) : record.createdTime;
