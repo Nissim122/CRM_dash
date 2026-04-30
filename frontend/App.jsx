@@ -115,6 +115,8 @@ export default function App() {
         );
         if (cancelled) return;
         const [leads, sales, meetings, customers, payments, followups, interactions, actions] = results;
+        console.log('[debug] table keys loaded:', Object.keys(tables));
+        console.log('[debug] actions records count:', actions.length);
         setAllRecords({
           leads:        leads.map(wrapRecord),
           sales:        sales.map(wrapRecord),

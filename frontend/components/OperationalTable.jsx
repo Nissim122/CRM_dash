@@ -132,13 +132,34 @@ export default function OperationalTable({ records, fields, table, interactionsT
   );
 
   function resolveActionName(intxRec) {
-    const linkVal = intxActionLinkField ? intxRec.getCellValue(intxActionLinkField) : null;
-    const linkedId = Array.isArray(linkVal) ? linkVal[0]?.id : linkVal?.id;
-    if (!linkedId) return intxRec.name ?? '—';
-    const actionRec = actionsById.get(linkedId);
-    if (!actionRec) return '—';
-    const nameVal = actionNameField ? actionRec.getCellValue(actionNameField) : null;
-    return nameVal?.name ?? nameVal ?? actionRec.name ?? '—';
+    if (!intxActionLinkField) {
+      console.log('[debug] intxActionLinkField is null. All interaction fields:', interactionsTable?.fields?.map(f => `${f.name}(${f.type})`));
+      console.log('[debug] All raw field values of interaction record:', JSON.stringify(Object.fromEntries(interactionsTable?.fields?.map(f => [f.name, intxRec.getCellValue(f)]) ?? [])));
+      return '—';
+    }
+    const val = intxRec.getCellValue(intxActionLinkField);
+    console.log('[debug] intxActionLinkField found. type:', intxActionLinkField?.type, '| val:', JSON.stringify(val));
+    console.log('[debug] actionsById size:', actionsById.size);
+    if (val == null) return '—';
+    // singleSelect → { name: "..." }
+    if (typeof val === 'object' && !Array.isArray(val) && val.name) return String(val.name);
+    if (!Array.isArray(val) || val.length === 0) return '—';
+    const first = val[0];
+    if (first == null) return '—';
+    // multipleLookupValues returning the singleSelect name as a string
+    if (typeof first === 'string') return first;
+    // singleSelect object in array { name }
+    if (typeof first === 'object' && first.name) return String(first.name);
+    // multipleRecordLinks { id } — look up in actionsById
+    if (typeof first === 'object' && first.id) {
+      const actionRec = actionsById.get(first.id);
+      if (!actionRec) return '—';
+      const nameVal = actionNameField ? actionRec.getCellValue(actionNameField) : null;
+      if (nameVal?.name) return String(nameVal.name);
+      if (typeof nameVal === 'string') return nameVal;
+      return actionRec.name ?? '—';
+    }
+    return '—';
   }
 
   useEffect(() => {
