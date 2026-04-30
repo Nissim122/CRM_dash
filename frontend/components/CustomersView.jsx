@@ -105,7 +105,10 @@ export default function CustomersView({
 
   function openSalesModal(record) {
     const leadLinks    = customersFields.lead ? record.getCellValue(customersFields.lead) : null;
-    const customerName = leadsById.get(leadLinks?.[0]?.id)?.name ?? '—';
+    const leadRecModal = leadLinks?.[0] ? leadsById.get(leadLinks[0].id) : null;
+    const customerName = leadRecModal && leadsFields?.name
+      ? (leadRecModal.getCellValue(leadsFields.name) ?? '—')
+      : (leadRecModal?.name ?? '—');
     const salesLinks   = customersFields.salesLink
       ? (record.getCellValue(customersFields.salesLink) ?? [])
       : [];
@@ -492,7 +495,10 @@ export default function CustomersView({
                 const leadLinks  = customersFields.lead  ? record.getCellValue(customersFields.lead)  : null;
                 const totalRaw   = customersFields.total ? record.getCellValue(customersFields.total) : null;
 
-                const name       = leadLinks?.[0]?.name ?? '—';
+                const leadRec    = leadLinks?.[0] ? leadsById.get(leadLinks[0].id) : null;
+                const name       = leadRec && leadsFields?.name
+                  ? (leadRec.getCellValue(leadsFields.name) ?? '—')
+                  : (leadRec?.name ?? '—');
                 const salesLinks = customersFields.salesLink
                   ? (record.getCellValue(customersFields.salesLink) ?? [])
                   : [];
