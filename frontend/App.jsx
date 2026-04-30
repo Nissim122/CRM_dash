@@ -28,7 +28,7 @@ const VIEWS = [
   { key: 'followups', label: 'פולואפים' },
 ];
 
-const TABLE_NAMES = ['לידים', 'מכירות', 'פגישות בזום', 'לקוחות', 'תשלומים', 'פולואפים', 'אינטרקציות'];
+const TABLE_NAMES = ['לידים', 'מכירות', 'פגישות בזום', 'לקוחות', 'תשלומים', 'פולואפים', 'אינטרקציות', 'פעולות'];
 
 function AuthScreen({ onAuth }) {
   const [input, setInput] = useState('');
@@ -76,7 +76,7 @@ export default function App() {
   const [tables, setTables]         = useState({});
   const [allRecords, setAllRecords] = useState({
     leads: [], sales: [], meetings: [], customers: [],
-    payments: [], followups: [], interactions: [],
+    payments: [], followups: [], interactions: [], actions: [],
   });
   const [loading, setLoading]           = useState(true);
   const [error, setError]               = useState(null);
@@ -114,7 +114,7 @@ export default function App() {
           TABLE_NAMES.map(name => tables[name] ? fetchAllRecords(tables[name].id) : Promise.resolve([]))
         );
         if (cancelled) return;
-        const [leads, sales, meetings, customers, payments, followups, interactions] = results;
+        const [leads, sales, meetings, customers, payments, followups, interactions, actions] = results;
         setAllRecords({
           leads:        leads.map(wrapRecord),
           sales:        sales.map(wrapRecord),
@@ -123,6 +123,7 @@ export default function App() {
           payments:     payments.map(wrapRecord),
           followups:    followups.map(wrapRecord),
           interactions: interactions.map(wrapRecord),
+          actions:      actions.map(wrapRecord),
         });
         setLoading(false);
         setError(null);
@@ -145,6 +146,7 @@ export default function App() {
   const paymentsTable     = tables['תשלומים']      ?? null;
   const followupsTable    = tables['פולואפים']     ?? null;
   const interactionsTable = tables['אינטרקציות']   ?? null;
+  const actionsTable      = tables['פעולות']        ?? null;
 
   const records             = allRecords.leads;
   const salesRecords        = allRecords.sales;
@@ -153,6 +155,7 @@ export default function App() {
   const paymentsRecords     = allRecords.payments;
   const followupsRecords    = allRecords.followups;
   const interactionsRecords = allRecords.interactions;
+  const actionsRecords      = allRecords.actions;
 
   const fields = useMemo(() => {
     if (!leadsTable) return {};
@@ -341,7 +344,7 @@ export default function App() {
               <LeadFunnel records={records} fields={fields} period={period} />
               <LeadSourceChart records={records} fields={fields} period={period} />
             </div>
-            <OperationalTable records={records} fields={fields} table={leadsTable} interactionsTable={interactionsTable} interactionsRecords={interactionsRecords} />
+            <OperationalTable records={records} fields={fields} table={leadsTable} interactionsTable={interactionsTable} interactionsRecords={interactionsRecords} actionsTable={actionsTable} actionsRecords={actionsRecords} />
           </>
         )}
 

@@ -76,7 +76,7 @@ function toggleInArray(arr, val) {
   return arr.includes(val) ? arr.filter((x) => x !== val) : [...arr, val];
 }
 
-export default function OperationalTable({ records, fields, table, interactionsTable, interactionsRecords }) {
+export default function OperationalTable({ records, fields, table, interactionsTable, interactionsRecords, actionsTable, actionsRecords }) {
   const [expandedRow,     setExpandedRow]     = useState(null);
   const [draftValues,     setDraftValues]     = useState({});
   const [origValues,      setOrigValues]      = useState({});
@@ -114,14 +114,32 @@ export default function OperationalTable({ records, fields, table, interactionsT
     () => new Map((interactionsRecords ?? []).map((r) => [r.id, r])),
     [interactionsRecords]
   );
-  const intxActionField = useMemo(
+  const actionsById = useMemo(
+    () => new Map((actionsRecords ?? []).map((r) => [r.id, r])),
+    [actionsRecords]
+  );
+  const intxActionLinkField = useMemo(
     () => interactionsTable?.getFieldByNameIfExists('פעולה'),
     [interactionsTable]
+  );
+  const actionNameField = useMemo(
+    () => actionsTable?.getFieldByNameIfExists('פעולה'),
+    [actionsTable]
   );
   const intxScoreField = useMemo(
     () => interactionsTable?.getFieldByNameIfExists('הוספה לדירוג'),
     [interactionsTable]
   );
+
+  function resolveActionName(intxRec) {
+    const linkVal = intxActionLinkField ? intxRec.getCellValue(intxActionLinkField) : null;
+    const linkedId = Array.isArray(linkVal) ? linkVal[0]?.id : linkVal?.id;
+    if (!linkedId) return intxRec.name ?? '—';
+    const actionRec = actionsById.get(linkedId);
+    if (!actionRec) return '—';
+    const nameVal = actionNameField ? actionRec.getCellValue(actionNameField) : null;
+    return nameVal?.name ?? nameVal ?? actionRec.name ?? '—';
+  }
 
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 60_000);
@@ -958,8 +976,7 @@ export default function OperationalTable({ records, fields, table, interactionsT
               {interactionDetailId ? (() => {
                 const rec = interactionsById.get(interactionDetailId);
                 if (!rec) return <div className="interaction-detail__fields"><span style={{ color: 'var(--gray-9)', fontSize: '0.85rem' }}>לא נמצא</span></div>;
-                const actionVal  = intxActionField ? rec.getCellValue(intxActionField) : null;
-                const actionName = Array.isArray(actionVal) ? actionVal[0]?.name : (actionVal?.name ?? rec.name ?? '—');
+                const actionName = resolveActionName(rec);
                 const scoreRaw   = intxScoreField ? rec.getCellValue(intxScoreField) : null;
                 const scoreItem  = Array.isArray(scoreRaw) ? scoreRaw[0] : scoreRaw;
                 const score      = scoreItem != null && typeof scoreItem === 'object' ? scoreItem.value : scoreItem;
@@ -989,8 +1006,7 @@ export default function OperationalTable({ records, fields, table, interactionsT
                 ) : interactionsModal.linkedIds.map((id) => {
                   const rec = interactionsById.get(id);
                   if (!rec) return null;
-                  const actionVal  = intxActionField ? rec.getCellValue(intxActionField) : null;
-                  const actionName = Array.isArray(actionVal) ? actionVal[0]?.name : (actionVal?.name ?? rec.name ?? '—');
+                  const actionName = resolveActionName(rec);
                   const scoreRaw   = intxScoreField ? rec.getCellValue(intxScoreField) : null;
                   const scoreItem  = Array.isArray(scoreRaw) ? scoreRaw[0] : scoreRaw;
                   const score      = scoreItem != null && typeof scoreItem === 'object' ? scoreItem.value : scoreItem;
