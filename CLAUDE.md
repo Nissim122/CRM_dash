@@ -152,6 +152,10 @@ npm run build # production build → dist/
 ```
 בטרמינל PowerShell: `cmd /c npm run dev`.
 
+## Git Rules
+- **אחרי כל שינוי** — commit + push ל-`master` כחלק מהמטלה. אין לסיים מטלה מבלי לדחוף.
+- **הודעת commit:** קצרה וברורה, מתחילה ב-`fix:` / `feat:` / `chore:` לפי הסוג.
+
 ## Hard Rules
 - אין backend או DB מחוץ ל-Airtable — כל הנתונים דרך REST API.
 - אין `transition-all` ב-CSS.
