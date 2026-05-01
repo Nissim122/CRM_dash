@@ -336,7 +336,7 @@ export default function OperationalTable({ records, fields, table, interactionsT
     const updates = {};
 
     if (fields.status && draft.status !== orig.status) {
-      updates[fields.status.id] = draft.status ? { name: draft.status } : null;
+      updates[fields.status.id] = draft.status || null;
     }
     if (fields.nextAction && draft.nextAction !== orig.nextAction) {
       updates[fields.nextAction.id] = (draft.nextAction || '').trim().slice(0, MAX_TEXT_LENGTH);
@@ -345,10 +345,10 @@ export default function OperationalTable({ records, fields, table, interactionsT
       updates[fields.dealValue.id] = draft.dealValue === '' ? null : Number(draft.dealValue);
     }
     if (fields.leadSource && draft.leadSource !== orig.leadSource) {
-      updates[fields.leadSource.id] = draft.leadSource ? { name: draft.leadSource } : null;
+      updates[fields.leadSource.id] = draft.leadSource || null;
     }
     if (fields.serviceType && draft.serviceType !== orig.serviceType) {
-      updates[fields.serviceType.id] = draft.serviceType ? { name: draft.serviceType } : null;
+      updates[fields.serviceType.id] = draft.serviceType || null;
     }
     if (fields.phone && draft.phone !== orig.phone) {
       updates[fields.phone.id] = draft.phone || '';
@@ -361,8 +361,8 @@ export default function OperationalTable({ records, fields, table, interactionsT
       try {
         setSaveError(null);
         await table.updateRecordAsync(record, updates);
-      } catch {
-        setSaveError('שגיאה בשמירה — בדוק הרשאות');
+      } catch (err) {
+        setSaveError(`שגיאה בשמירה — ${err?.message ?? 'בדוק חיבור והרשאות'}`);
         isSavingRef.current = false;
         return;
       }
@@ -403,8 +403,8 @@ export default function OperationalTable({ records, fields, table, interactionsT
     setNoAnswerSaving(true);
     try {
       await table.updateRecordAsync(record, { [field.id]: !current });
-    } catch {
-      setSaveError('שגיאה בשמירה — בדוק הרשאות');
+    } catch (err) {
+      setSaveError(`שגיאה בשמירה — ${err?.message ?? 'בדוק חיבור והרשאות'}`);
     } finally {
       setNoAnswerSaving(false);
     }
@@ -418,8 +418,8 @@ export default function OperationalTable({ records, fields, table, interactionsT
     setTogglingMsgIds((prev) => new Set(prev).add(record.id));
     try {
       await table.updateRecordAsync(record, { [fields.messageSent.id]: !isSent });
-    } catch {
-      setSaveError('שגיאה בשמירה — בדוק הרשאות');
+    } catch (err) {
+      setSaveError(`שגיאה בשמירה — ${err?.message ?? 'בדוק חיבור והרשאות'}`);
     } finally {
       setTogglingMsgIds((prev) => { const s = new Set(prev); s.delete(record.id); return s; });
     }
