@@ -661,7 +661,8 @@ tr[style] td.col-sticky-left {
 
 /* Inline cell edit inputs (appear inside table cells) */
 .cell-edit-select,
-.cell-edit-input {
+.cell-edit-input,
+.cell-edit-date {
   background: #fff;
   border: 1px solid var(--clixx-7);
   border-radius: var(--radius-1);
@@ -672,7 +673,8 @@ tr[style] td.col-sticky-left {
   min-width: 0;
 }
 .cell-edit-select:focus,
-.cell-edit-input:focus {
+.cell-edit-input:focus,
+.cell-edit-date:focus {
   outline: none;
   border-color: var(--clixx-9);
   box-shadow: 0 0 0 2px var(--clixx-a4);

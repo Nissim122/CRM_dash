@@ -293,13 +293,19 @@ export default function OperationalTable({ records, fields, table, interactionsT
   }, [records, fields, filters]);
 
   function getDraftInitial(record) {
+    let proposalDateVal = '';
+    if (fields.proposalDate) {
+      const v = record.getCellValue(fields.proposalDate);
+      if (v) proposalDateVal = new Date(v).toISOString().slice(0, 10);
+    }
     return {
-      status:      fields.status      ? (record.getCellValue(fields.status)?.name      ?? null) : null,
-      nextAction:  fields.nextAction  ? (record.getCellValue(fields.nextAction)         ?? '')   : '',
-      dealValue:   fields.dealValue   ? (record.getCellValue(fields.dealValue)          ?? '')   : '',
-      leadSource:  fields.leadSource  ? (record.getCellValue(fields.leadSource)?.name  ?? null) : null,
-      serviceType: fields.serviceType ? (record.getCellValue(fields.serviceType)?.name ?? null) : null,
-      phone:       fields.phone       ? (record.getCellValue(fields.phone)              ?? '')   : '',
+      status:       fields.status      ? (record.getCellValue(fields.status)?.name      ?? null) : null,
+      nextAction:   fields.nextAction  ? (record.getCellValue(fields.nextAction)         ?? '')   : '',
+      dealValue:    fields.dealValue   ? (record.getCellValue(fields.dealValue)          ?? '')   : '',
+      leadSource:   fields.leadSource  ? (record.getCellValue(fields.leadSource)?.name  ?? null) : null,
+      serviceType:  fields.serviceType ? (record.getCellValue(fields.serviceType)?.name ?? null) : null,
+      phone:        fields.phone       ? (record.getCellValue(fields.phone)              ?? '')   : '',
+      proposalDate: proposalDateVal,
     };
   }
 
@@ -346,6 +352,9 @@ export default function OperationalTable({ records, fields, table, interactionsT
     }
     if (fields.phone && draft.phone !== orig.phone) {
       updates[fields.phone.id] = draft.phone || '';
+    }
+    if (fields.proposalDate && draft.proposalDate !== orig.proposalDate) {
+      updates[fields.proposalDate.id] = draft.proposalDate ? `${draft.proposalDate}T00:00:00.000` : null;
     }
 
     if (Object.keys(updates).length > 0) {
@@ -714,7 +723,14 @@ export default function OperationalTable({ records, fields, table, interactionsT
 
                     {/* הצעה נשלחה בתאריך */}
                     <Table.Cell>
-                      {(() => {
+                      {isExpanded && fields.proposalDate ? (
+                        <input
+                          type="date"
+                          className="cell-edit-date"
+                          value={draftValues.proposalDate || ''}
+                          onChange={(e) => setDraft('proposalDate', e.target.value)}
+                        />
+                      ) : (() => {
                         const raw = fields.proposalDate ? record.getCellValue(fields.proposalDate) : null;
                         if (!raw) return <Text color="gray" size="1">—</Text>;
                         const str = new Date(raw).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' });
