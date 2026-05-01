@@ -611,8 +611,6 @@ export default function OperationalTable({ records, fields, table, interactionsT
             <Table.Header>
               <Table.Row>
                 <Table.ColumnHeaderCell className="col-sticky-right" style={{ width: 40 }}></Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell>הצעת עבודה</Table.ColumnHeaderCell>
-                <Table.ColumnHeaderCell>הצעה נשלחה בתאריך</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>תאריך יצירה</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>הערות</Table.ColumnHeaderCell>
                 <Table.ColumnHeaderCell>מקור</Table.ColumnHeaderCell>
@@ -629,7 +627,7 @@ export default function OperationalTable({ records, fields, table, interactionsT
             <Table.Body>
               {filtered.length === 0 && (
                 <Table.Row>
-                  <Table.Cell colSpan={14}>
+                  <Table.Cell colSpan={12}>
                     <Text color="gray" align="center" style={{ display: 'block', padding: '24px' }}>
                       אין לידים להצגה
                     </Text>
@@ -695,47 +693,6 @@ export default function OperationalTable({ records, fields, table, interactionsT
                       ) : (
                         <Text color="gray" size="1">—</Text>
                       )}
-                    </Table.Cell>
-
-                    {/* הצעת עבודה */}
-                    <Table.Cell>
-                      {(() => {
-                        const attachments = fields.proposalFile ? record.getCellValue(fields.proposalFile) : null;
-                        if (!attachments || attachments.length === 0) return <Text color="gray" size="1">—</Text>;
-                        return (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3, minWidth: 90 }}>
-                            {attachments.map((att) => (
-                              <a
-                                key={att.id}
-                                href={`https://docs.google.com/viewer?url=${encodeURIComponent(att.url)}&embedded=false`}
-                                target="_blank"
-                                rel="noreferrer"
-                                title={att.filename}
-                                style={{ color: 'var(--indigo-11)', fontSize: 11, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 100, display: 'block' }}
-                              >
-                                {att.filename}
-                              </a>
-                            ))}
-                          </div>
-                        );
-                      })()}
-                    </Table.Cell>
-
-                    {/* הצעה נשלחה בתאריך */}
-                    <Table.Cell>
-                      {isExpanded && fields.proposalDate ? (
-                        <input
-                          type="date"
-                          className="cell-edit-date"
-                          value={draftValues.proposalDate || ''}
-                          onChange={(e) => setDraft('proposalDate', e.target.value)}
-                        />
-                      ) : (() => {
-                        const raw = fields.proposalDate ? record.getCellValue(fields.proposalDate) : null;
-                        if (!raw) return <Text color="gray" size="1">—</Text>;
-                        const str = new Date(raw).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' });
-                        return <Text size="1" style={{ whiteSpace: 'nowrap', color: 'var(--indigo-11)' }}>{str}</Text>;
-                      })()}
                     </Table.Cell>
 
                     {/* תאריך יצירה */}
