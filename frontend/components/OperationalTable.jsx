@@ -707,7 +707,7 @@ export default function OperationalTable({ records, fields, table, interactionsT
                             {attachments.map((att) => (
                               <a
                                 key={att.id}
-                                href={att.url}
+                                href={`https://docs.google.com/viewer?url=${encodeURIComponent(att.url)}&embedded=false`}
                                 target="_blank"
                                 rel="noreferrer"
                                 title={att.filename}
